@@ -1,0 +1,7 @@
+project_id = "nhip-viec"
+
+[functions.provision-work-member]
+verify_jwt = false
+
+[functions.notify-work-email]
+verify_jwt = false
