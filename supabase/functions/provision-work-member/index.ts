@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
       typeof input?.email === 'string' ? input.email.trim().toLowerCase() : ''
     const name = typeof input?.name === 'string' ? input.name.trim() : ''
     const password = typeof input?.password === 'string' ? input.password : ''
+    const department =
+      typeof input?.department === 'string' ? input.department.trim() : ''
     if (
       !teamIdPattern.test(team) ||
       !emailPattern.test(email) ||
@@ -77,6 +79,7 @@ Deno.serve(async (req) => {
         member_email: email,
         member_name: name,
         invited_now: invitedNow,
+        member_department: department,
       })
     const existing = await link(false)
     if (existing.error?.code === '42501')

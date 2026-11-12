@@ -21,7 +21,7 @@ function taskConflict(message) {
   return Object.assign(new Error(message), { code: 'TASK_CONFLICT' })
 }
 const taskSelection =
-  'id,team_id,title,description,status,priority,due_date,assigned_on,assigned_by,created_by,created_at,version,level,parent_id,sibling_no,work_task_assignees(user_id),work_deadline_requests(status)'
+  'id,team_id,title,description,status,previous_status,status_updated_at,priority,due_date,assigned_on,assigned_by,created_by,created_at,updated_at,version,level,parent_id,sibling_no,work_task_assignees(user_id),work_deadline_requests(status)'
 const commentSelection = 'id,task_id,author_id,author_name,body,created_at'
 
 export function createBackend(authUser) {
@@ -61,12 +61,12 @@ export function createBackend(authUser) {
           .select(taskSelection)
           .eq('work_deadline_requests.status', 'pending')
           .order('id')
-      const [members, privateTasks, teamTasks] = await Promise.all([
+      const [members, privateTasks, teamTasks, deletedTasks] = await Promise.all([
         team
           ? allRows(() =>
               client
                 .from('work_members')
-                .select('user_id,display_name,role')
+                .select('user_id,display_name,email,department,role')
                 .eq('team_id', team)
                 .order('display_name')
                 .order('user_id'),
@@ -74,6 +74,13 @@ export function createBackend(authUser) {
           : [],
         allRows(() => getTasks().is('team_id', null)),
         team ? allRows(() => getTasks().eq('team_id', team)) : [],
+        allRows(() => {
+          const query = client
+            .from('work_deleted_tasks')
+            .select('id,team_id,title,level,previous_status,assignee_ids,assigned_on,deleted_at')
+            .order('deleted_at', { ascending: false })
+          return team ? query.or(`team_id.eq.${team},team_id.is.null`) : query.is('team_id', null)
+        }).catch(() => []),
       ])
       const tasks = [...privateTasks, ...teamTasks].map(
         ({ work_task_assignees, work_deadline_requests, ...task }) => ({
@@ -82,7 +89,7 @@ export function createBackend(authUser) {
           extension_pending: work_deadline_requests.length > 0,
         }),
       )
-      return { members, tasks }
+      return { members, tasks, deletedTasks }
     },
     async saveTask(data, previous) {
       const { data: task, error } = await client.rpc('work_save_task', {
@@ -224,9 +231,9 @@ export function createBackend(authUser) {
         }),
       )
     },
-    async createMember(team, name, email, password) {
+    async createMember(team, name, email, password, department = '') {
       const response = await client.functions.invoke('provision-work-member', {
-        body: { teamId: team.id, name, email, password },
+        body: { teamId: team.id, name, email, password, department },
       })
       if (response.error) {
         const context = response.error.context
@@ -239,6 +246,25 @@ export function createBackend(authUser) {
         )
       }
       return response.data
+    },
+    async updateMember(team, userId, fields) {
+      return result(
+        await client.rpc('work_update_member', {
+          target_team: team.id,
+          target_user: userId,
+          member_name: fields.display_name,
+          member_email: fields.email,
+          member_department: fields.department || '',
+        }),
+      )
+    },
+    async removeMember(team, userId) {
+      result(
+        await client.rpc('work_remove_member', {
+          target_team: team.id,
+          target_user: userId,
+        }),
+      )
     },
     async signOut() {
       result(await client.auth.signOut())
