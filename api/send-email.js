@@ -27,58 +27,111 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
 }
 
-function buildHtmlEmail({ subject, body, actionUrl }) {
+function buildHtmlEmail({ subject, body, actionUrl, recipientName }) {
   const lines = String(body || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
 
-  const rowsHtml = lines
-    .map((line, index) => {
-      const colonIdx = line.indexOf(':')
-      if (colonIdx > 0 && colonIdx < 35) {
-        const label = escapeHtml(line.slice(0, colonIdx))
-        const val = escapeHtml(line.slice(colonIdx + 1).trim())
-        return `
-          <tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #efeaf8;color:#6c6584;font-size:13px;font-weight:600;width:38%;vertical-align:top;">${label}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #efeaf8;color:#221c35;font-size:13px;font-weight:600;vertical-align:top;">${val}</td>
-          </tr>`
-      }
-      return `
+  let title = String(subject || '').replace(/^\[[^\]]+\]\s*/, '')
+  const greeting = recipientName ? `Xin chào <strong>${escapeHtml(recipientName)}</strong>,` : 'Xin chào bạn,'
+
+  const tableRows = []
+  let highlightNote = ''
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const colonIdx = line.indexOf(':')
+    if (colonIdx > 0 && colonIdx < 35) {
+      const label = line.slice(0, colonIdx).trim()
+      const val = line.slice(colonIdx + 1).trim()
+      tableRows.push({ label, val })
+    } else if (!highlightNote) {
+      highlightNote = line
+    }
+  }
+
+  const rowsHtml = tableRows
+    .map(
+      ({ label, val }) => `
         <tr>
-          <td colspan="2" style="padding:10px 12px;border-bottom:1px solid #efeaf8;color:${index === 1 ? '#4f359b' : '#2d2642'};background:${index === 1 ? '#f7f3ff' : 'transparent'};font-size:13.5px;line-height:1.5;">
-            ${escapeHtml(line)}
+          <td style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#6b7280;font-size:13px;width:36%;vertical-align:top;font-weight:500;">
+            ${escapeHtml(label)}
           </td>
-        </tr>`
-    })
+          <td style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#111827;font-size:13.5px;vertical-align:top;font-weight:600;">
+            ${escapeHtml(val)}
+          </td>
+        </tr>`,
+    )
     .join('')
 
   return `<!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:24px 12px;background:#f4f1fa;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#221c35;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4ddf4;box-shadow:0 8px 24px rgba(45,26,102,0.08);">
-    <div style="background:linear-gradient(135deg,#5b38c9,#7c5dfa);padding:20px 24px;color:#ffffff;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;opacity:0.9;margin-bottom:4px;">Nhịp việc · Thông báo tự động</div>
-      <h1 style="margin:0;font-size:18px;font-weight:700;line-height:1.35;color:#ffffff;">${escapeHtml(subject)}</h1>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${escapeHtml(subject)}</title>
+  <style>
+    :root { color-scheme: light; }
+  </style>
+</head>
+<body style="margin:0;padding:24px 12px;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
+  <div style="max-width:540px;margin:0 auto;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+    <!-- Header -->
+    <div style="background-color:#5a32a3;padding:20px 24px;border-bottom:3px solid #7c4ddb;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:middle;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;">
+              Nhịp việc · Thông báo công việc
+            </div>
+            <div style="font-size:17px;font-weight:700;line-height:1.35;color:#ffffff;">
+              ${escapeHtml(title)}
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
-    <div style="padding:20px 24px;">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #ece6f8;border-radius:10px;overflow:hidden;">
+
+    <!-- Body content -->
+    <div style="padding:24px 24px 20px 24px;background-color:#ffffff;">
+      <!-- Greeting -->
+      <p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.6;color:#1f2937;">
+        ${greeting}
+      </p>
+
+      ${
+        highlightNote
+          ? `<div style="margin:0 0 18px 0;padding:12px 16px;background-color:#f7f4fd;border-left:4px solid #6b46c1;border-radius:6px;font-size:13.5px;line-height:1.55;color:#44337a;font-weight:500;">
+              ${escapeHtml(highlightNote)}
+            </div>`
+          : ''
+      }
+
+      <!-- Details table -->
+      <table style="width:100%;border-collapse:collapse;background-color:#ffffff;border:1px solid #f0eef5;border-radius:10px;overflow:hidden;margin-bottom:22px;">
         <tbody>
           ${rowsHtml}
         </tbody>
       </table>
+
+      <!-- CTA Button -->
       ${
         actionUrl
-          ? `<div style="margin-top:20px;text-align:center;">
-              <a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:11px 22px;background:#6544d8;color:#ffffff;text-decoration:none;border-radius:9px;font-size:13.5px;font-weight:700;">Mở công việc trên Nhịp việc →</a>
+          ? `<div style="text-align:center;margin:24px 0 8px 0;">
+              <a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 28px;background-color:#5a32a3;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.01em;box-shadow:0 3px 8px rgba(90,50,163,0.25);">
+                Xem chi tiết công việc →
+              </a>
             </div>`
           : ''
       }
     </div>
-    <div style="padding:12px 24px;background:#faf8ff;border-top:1px solid #eee9f9;font-size:11.5px;color:#7a7293;text-align:center;">
-      Email này được gửi tự động từ hệ thống quản lý công việc Nhịp việc.
+
+    <!-- Footer -->
+    <div style="padding:14px 24px;background-color:#fafafa;border-top:1px solid #f0f0f0;font-size:12px;color:#8c93a0;text-align:center;line-height:1.5;">
+      Email gửi tự động từ hệ thống <strong>Nhịp việc</strong>. Vui lòng không trả lời trực tiếp email này.
     </div>
   </div>
 </body>
@@ -417,11 +470,15 @@ function prepareMessages(jobs, baseUrl) {
     } catch {
       // keep default URL
     }
-    const text = actionUrl ? `${job.body}\n\nMở Nhịp việc: ${actionUrl}` : job.body
+    const greetingLine = job.name ? `Xin chào ${job.name},\n\n` : 'Xin chào bạn,\n\n'
+    const text = actionUrl
+      ? `${greetingLine}${job.body}\n\nXem chi tiết công việc: ${actionUrl}`
+      : `${greetingLine}${job.body}`
     const html = buildHtmlEmail({
       subject: job.subject,
       body: job.body,
       actionUrl,
+      recipientName: job.name || '',
     })
     return {
       id: job.id,
