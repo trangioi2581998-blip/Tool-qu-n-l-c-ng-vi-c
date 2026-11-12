@@ -4109,8 +4109,6 @@ h3 {
 }
 .email-center-body .demo-mailbox {
   padding: 0;
-  max-height: 400px;
-  overflow-y: auto;
 }
 .email-log-item.is-clickable {
   cursor: pointer;
