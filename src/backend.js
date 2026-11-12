@@ -77,14 +77,16 @@ export function createBackend(authUser) {
       let sent = 0
       let failed = 0
       for (const item of results) {
-        await client
-          .rpc('work_complete_pending_email', {
+        try {
+          await client.rpc('work_complete_pending_email', {
             message_id: item.id,
             claim_id: item.lease_id,
             delivered: Boolean(item.delivered),
             detail: item.detail || null,
           })
-          .catch(() => null)
+        } catch {
+          // ignore
+        }
         if (item.delivered) sent += 1
         else failed += 1
       }
@@ -106,7 +108,11 @@ export function createBackend(authUser) {
       )
     },
     async markNotificationsRead() {
-      await client.rpc('work_mark_notifications_read').catch(() => null)
+      try {
+        await client.rpc('work_mark_notifications_read')
+      } catch {
+        // ignore
+      }
     },
     async getEmailSettings() {
       return result(await client.rpc('work_get_email_settings'))
