@@ -879,6 +879,14 @@ export default function App({
           children.push(createdChild)
         }
       }
+      if (previous && recurringCycles?.length > 0) {
+        const batches = await repo.createRecurringTasks(recurringCycles)
+        const extraTasks = batches.flatMap((b) => [
+          b.task,
+          ...(b.children || []),
+        ])
+        children.push(...extraTasks)
+      }
     } catch (error) {
       if (error.code === 'TASK_CONFLICT') refresh()
       throw error
@@ -917,7 +925,9 @@ export default function App({
     if (!failed.length) {
       notify(
         previous
-          ? 'Đã cập nhật công việc.'
+          ? recurringCycles?.length > 0
+            ? `Đã lưu công việc và tạo thêm ${recurringCycles.length} kỳ lặp lại.`
+            : 'Đã cập nhật công việc.'
           : children.length
             ? 'Đã tạo công việc chính và ' + children.length + ' việc con.'
             : 'Đã tạo công việc.',

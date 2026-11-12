@@ -449,6 +449,7 @@ function buildRecurringCycles({
   repeatCount,
   repeatUntil,
   repeatNaming,
+  startStep = 0,
 }) {
   const weeks =
     repeatInterval === 'custom'
@@ -462,7 +463,8 @@ function buildRecurringCycles({
   const rawList = []
 
   if (repeatRangeType === 'until' && repeatUntil && repeatUntil >= assignedOn) {
-    for (let k = 0; k < 52; k++) {
+    for (let i = 0; i < 52; i++) {
+      const k = startStep + i
       const offsetDays = k * weeks * 7
       const cycleAssigned = shiftDay(offsetDays, startAssigned)
       if (cycleAssigned > repeatUntil) break
@@ -470,8 +472,9 @@ function buildRecurringCycles({
       rawList.push({ k, offsetDays, assignedOn: cycleAssigned, due: cycleDue })
     }
   } else {
-    const count = Math.max(2, Math.min(52, Number(repeatCount) || 4))
-    for (let k = 0; k < count; k++) {
+    const count = Math.max(1, Math.min(52, Number(repeatCount) || 4))
+    for (let i = 0; i < count; i++) {
+      const k = startStep + i
       const offsetDays = k * weeks * 7
       rawList.push({
         k,
@@ -500,6 +503,7 @@ function buildRecurringCycles({
 }
 
 function RecurringScheduleSection({
+  isExistingTask = false,
   assignedOn,
   assignedTime,
   due,
@@ -529,10 +533,17 @@ function RecurringScheduleSection({
     <section className="task-relations recurring-section">
       <header>
         <h3>
-          <Repeat size={15} /> Lặp lại định kỳ (Tạo nhiều kỳ cùng lúc)
+          <Repeat size={15} />{' '}
+          {isExistingTask
+            ? 'Lặp lại định kỳ (Tạo thêm các kỳ tiếp theo)'
+            : 'Lặp lại định kỳ (Tạo nhiều kỳ cùng lúc)'}
         </h3>
-        {isRepeating && activeCount > 1 && (
-          <span className="badge purple">Sẽ tạo {activeCount} kỳ</span>
+        {isRepeating && activeCount > 0 && (
+          <span className="badge purple">
+            {isExistingTask
+              ? `Sẽ tạo thêm ${activeCount} kỳ`
+              : `Sẽ tạo ${activeCount} kỳ`}
+          </span>
         )}
       </header>
       <div className="recurring-controls">
@@ -801,19 +812,18 @@ export function TaskDialog({
   )
   const [repeatNaming, setRepeatNaming] = useState('cycle_date')
   const [excludedCycles, setExcludedCycles] = useState([])
-  const allRecurringCycles = !task
-    ? buildRecurringCycles({
-        title,
-        assignedOn,
-        due,
-        repeatInterval,
-        customWeeks,
-        repeatRangeType,
-        repeatCount,
-        repeatUntil,
-        repeatNaming,
-      })
-    : []
+  const allRecurringCycles = buildRecurringCycles({
+    title,
+    assignedOn,
+    due,
+    repeatInterval,
+    customWeeks,
+    repeatRangeType,
+    repeatCount,
+    repeatUntil,
+    repeatNaming,
+    startStep: task ? 1 : 0,
+  })
   const activeRecurringCycles = allRecurringCycles.filter(
     (c) => !excludedCycles.includes(c.k),
   )
@@ -957,8 +967,9 @@ export function TaskDialog({
         pending={pendingExtension}
         blockDone={remaining > 0}
       />
-      {!task && (
+      {canOrganize && (
         <RecurringScheduleSection
+          isExistingTask={Boolean(task)}
           assignedOn={assignedOn}
           assignedTime={assignedTime}
           due={due}
@@ -1177,15 +1188,28 @@ export function TaskDialog({
             parent_id: level === 1 ? null : parent,
           }
         : {}
-      if (!task && repeatInterval !== '0') {
+      if (canOrganize && repeatInterval !== '0') {
         if (!activeRecurringCycles.length) {
           setError('Hãy chọn ít nhất 1 kỳ lặp lại trong danh sách.')
           setBusy(false)
           return
         }
+        const existingChildrenTemplates = childEdits.map((c) => ({
+          title: c.title.trim(),
+          description: c.description.trim(),
+          status: 'todo',
+          priority: c.priority,
+          assigned_on: c.assignedOn || assignedOn,
+          assigned_time: c.assignedTime || '09:00',
+          due_date: c.due || due,
+          due_time: c.dueTime || '17:30',
+          assignee_ids: scope === 'team' ? c.assignees : [repo.user.id],
+        }))
+        const allChildTemplates = [...existingChildrenTemplates, ...childTasks]
         const cyclesPayload = activeRecurringCycles.map((cycle) => ({
           main: {
             ...fields,
+            status: task ? 'todo' : fields.status,
             title: cycle.title,
             due_date: cycle.due,
             due_time: dueTime || '17:30',
@@ -1193,7 +1217,7 @@ export function TaskDialog({
             assigned_time: assignedTime || '09:00',
             ...structure,
           },
-          children: childTasks.map((c) => ({
+          children: allChildTemplates.map((c) => ({
             ...c,
             assigned_on: c.assigned_on
               ? shiftDay(cycle.offsetDays, parseDay(c.assigned_on))
@@ -1646,7 +1670,11 @@ export function TaskDialog({
                 {busy
                   ? 'Đang lưu…'
                   : task
-                    ? 'Lưu thay đổi'
+                    ? canOrganize &&
+                      repeatInterval !== '0' &&
+                      activeRecurringCycles.length > 0
+                      ? `Lưu & Tạo ${activeRecurringCycles.length} kỳ tiếp theo`
+                      : 'Lưu thay đổi'
                     : repeatInterval !== '0' && activeRecurringCycles.length > 0
                       ? `Tạo ${activeRecurringCycles.length} kỳ công việc`
                       : childDrafts.length
