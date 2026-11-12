@@ -4214,3 +4214,34 @@ h3 {
   min-height: 28px !important;
   font-size: 11px !important;
 }
+
+/* Spinner load tròn ở giữa màn hình */
+.page-spinner-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 40px 20px;
+  width: 100%;
+}
+.page-spinner-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3.5px solid #eae5f7;
+  border-top-color: var(--purple, #6544d8);
+  border-right-color: var(--purple-accent, #8b6dfa);
+  animation: pageSpin 0.85s linear infinite;
+}
+.page-spinner-text {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--purple-dark, #36256e);
+  letter-spacing: 0.01em;
+}
+@keyframes pageSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
