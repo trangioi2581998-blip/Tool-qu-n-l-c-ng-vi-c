@@ -11,6 +11,10 @@ function encodeBase64(str) {
   return Buffer.from(String(str || ''), 'utf8').toString('base64')
 }
 
+function encodeBase64Mime(str) {
+  return encodeBase64(str).replace(/.{1,76}/g, '$&\r\n').trimEnd()
+}
+
 function encodeHeader(str) {
   return '=?UTF-8?B?' + encodeBase64(str) + '?='
 }
@@ -139,11 +143,14 @@ function sendBatchViaSmtp(settings, messages) {
 
     const buildMime = (msg) => {
       const boundary = '----=_NhipViec_' + Date.now().toString(36) + '_' + msgIdx
+      const domain = (fromEmail.split('@')[1] || 'gmail.com').replace(/[^a-zA-Z0-9.-]/g, '')
+      const msgId = `<${Date.now()}.${msgIdx}.${Math.random().toString(36).slice(2, 10)}@${domain}>`
       return [
         `From: ${encodeHeader(fromName)} <${fromEmail}>`,
         `To: <${msg.to}>`,
         `Subject: ${encodeHeader(msg.subject)}`,
         `Date: ${new Date().toUTCString()}`,
+        `Message-ID: ${msgId}`,
         'MIME-Version: 1.0',
         `Content-Type: multipart/alternative; boundary="${boundary}"`,
         '',
@@ -151,13 +158,13 @@ function sendBatchViaSmtp(settings, messages) {
         'Content-Type: text/plain; charset="UTF-8"',
         'Content-Transfer-Encoding: base64',
         '',
-        encodeBase64(msg.text),
+        encodeBase64Mime(msg.text),
         '',
         `--${boundary}`,
         'Content-Type: text/html; charset="UTF-8"',
         'Content-Transfer-Encoding: base64',
         '',
-        encodeBase64(msg.html),
+        encodeBase64Mime(msg.html),
         '',
         `--${boundary}--`,
         '',
