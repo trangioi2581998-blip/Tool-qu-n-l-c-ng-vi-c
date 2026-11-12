@@ -279,7 +279,9 @@ function RelatedTaskNode({ task, members, user, onOpen, canReassign, repo }) {
     status: task.status,
     priority: task.priority,
     assignedOn: task.assigned_on || '',
+    assignedTime: task.assigned_time || '09:00',
     due: task.due_date || '',
+    dueTime: task.due_time || '17:30',
   }
   return (
     <TaskNode
@@ -405,21 +407,27 @@ function TaskAttributes({
         <div className="datepicker-field">
           <span className="field-label">Ngày giao</span>
           <DatePicker
+            withTime
             required={requireDates}
             disabled={!canOrganize || pending}
             value={values.assignedOn}
+            time={values.assignedTime || '09:00'}
             onChange={(val) => change?.('assignedOn', val)}
+            onTimeChange={(val) => change?.('assignedTime', val)}
           />
         </div>
         <div className="datepicker-field">
           <span className="field-label">Ngày hoàn thành (hạn)</span>
           <DatePicker
+            withTime
             required={requireDates}
             disabled={!canOrganize || pending}
             value={values.due}
+            time={values.dueTime || '17:30'}
             min={enforceDateOrder ? values.assignedOn : ''}
             align="right"
             onChange={(val) => change?.('due', val)}
+            onTimeChange={(val) => change?.('dueTime', val)}
           />
         </div>
       </div>
@@ -434,6 +442,13 @@ function requiredSchedule(values, teamTask) {
     return 'Hãy nhập ngày giao và ngày hoàn thành.'
   if (values.due < values.assignedOn)
     return 'Ngày hoàn thành phải từ ngày giao trở đi.'
+  if (
+    values.due === values.assignedOn &&
+    values.dueTime &&
+    values.assignedTime &&
+    values.dueTime < values.assignedTime
+  )
+    return 'Giờ hoàn thành phải từ giờ giao trở đi.'
   return ''
 }
 
@@ -473,7 +488,9 @@ export function TaskDialog({
       status: child.status,
       priority: child.priority,
       assignedOn: child.assigned_on || '',
+      assignedTime: child.assigned_time || '09:00',
       due: child.due_date || '',
+      dueTime: child.due_time || '17:30',
       attachments: [],
       expanded: true,
     })),
@@ -508,8 +525,14 @@ export function TaskDialog({
   const [due, setDue] = useState(
     activeRoot?.due_date || config.parent?.due_date || config.due || '',
   )
+  const [dueTime, setDueTime] = useState(
+    activeRoot?.due_time || config.parent?.due_time || '17:30',
+  )
   const [assignedOn, setAssignedOn] = useState(
     activeRoot?.assigned_on || config.parent?.assigned_on || today,
+  )
+  const [assignedTime, setAssignedTime] = useState(
+    activeRoot?.assigned_time || config.parent?.assigned_time || '09:00',
   )
   const [pendingExtension, setPendingExtension] = useState(false)
   const [error, setError] = useState('')
@@ -531,17 +554,29 @@ export function TaskDialog({
   )
   const canEdit = canEditMain || canEditAnyChild
   const teamTask = scope === 'team'
-  const values = { assignees, status, priority, assignedOn, due }
+  const values = {
+    assignees,
+    status,
+    priority,
+    assignedOn,
+    assignedTime,
+    due,
+    dueTime,
+  }
   const setters = {
     assignees: setAssignees,
     status: setStatus,
     priority: setPriority,
     assignedOn: setAssignedOn,
+    assignedTime: setAssignedTime,
     due: setDue,
+    dueTime: setDueTime,
   }
   const changedDates =
     assignedOn !== activeRoot?.assigned_on ||
-    due !== (activeRoot?.due_date || '')
+    assignedTime !== (activeRoot?.assigned_time || '09:00') ||
+    due !== (activeRoot?.due_date || '') ||
+    dueTime !== (activeRoot?.due_time || '17:30')
   const draftFields = (child) => ({
     ...values,
     status: 'todo',
@@ -738,7 +773,9 @@ export function TaskDialog({
       }
       const childDatesChanged =
         child.assignedOn !== (item.assigned_on || '') ||
-        child.due !== (item.due_date || '')
+        child.assignedTime !== (item.assigned_time || '09:00') ||
+        child.due !== (item.due_date || '') ||
+        child.dueTime !== (item.due_time || '17:30')
       const childPeopleChanged =
         child.assignees.length !== item.assignee_ids.length ||
         child.assignees.some((id) => !item.assignee_ids.includes(id))
@@ -769,7 +806,9 @@ export function TaskDialog({
                 ...(childCanOrganize
                   ? {
                       due_date: child.due || null,
+                      due_time: child.dueTime || '17:30',
                       assigned_on: child.assignedOn,
+                      assigned_time: child.assignedTime || '09:00',
                       team_id: item.team_id,
                       assignee_ids: item.team_id
                         ? child.assignees
@@ -801,7 +840,9 @@ export function TaskDialog({
         status: fields.status,
         priority: fields.priority,
         assigned_on: fields.assignedOn,
+        assigned_time: fields.assignedTime || '09:00',
         due_date: fields.due,
+        due_time: fields.dueTime || '17:30',
         assignee_ids: teamTask ? fields.assignees : [repo.user.id],
       })
     }
@@ -815,7 +856,12 @@ export function TaskDialog({
         priority,
       }
       const dates = canOrganize
-        ? { due_date: due || null, assigned_on: assignedOn }
+        ? {
+            due_date: due || null,
+            due_time: dueTime || '17:30',
+            assigned_on: assignedOn,
+            assigned_time: assignedTime || '09:00',
+          }
         : {}
       const structure = canOrganize
         ? {

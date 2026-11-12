@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleDashed,
+  Clock3,
   Flag,
   Plus,
   X,
@@ -209,10 +210,13 @@ export function Dropdown({ label, children, trigger, className = '' }) {
 }
 export function DatePicker({
   value = '',
+  time = '09:00',
+  withTime = false,
   min = '',
   disabled = false,
   required = false,
   onChange,
+  onTimeChange,
   align = 'left',
 }) {
   const [open, setOpen] = useState(false)
@@ -221,6 +225,13 @@ export function DatePicker({
   const baseDate = value ? parseDay(value) : parseDay(today)
   const [viewYear, setViewYear] = useState(() => baseDate.getFullYear())
   const [viewMonth, setViewMonth] = useState(() => baseDate.getMonth())
+
+  const safeTime = /^\d{2}:\d{2}$/.test(time) ? time : '09:00'
+  const [hour, minute] = safeTime.split(':')
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  const minutes = Array.from({ length: 60 }, (_, i) =>
+    String(i).padStart(2, '0'),
+  )
 
   useEffect(() => {
     if (value) {
@@ -314,7 +325,21 @@ export function DatePicker({
         }}
       >
         <span className={value ? 'datepicker-value' : 'datepicker-placeholder'}>
-          {value ? fullDate(value) : 'dd/mm/yyyy'}
+          {value ? (
+            <>
+              <span>{fullDate(value)}</span>
+              {withTime && (
+                <span className="datepicker-time-chip">
+                  <Clock3 size={12} />
+                  {safeTime}
+                </span>
+              )}
+            </>
+          ) : withTime ? (
+            'dd/mm/yyyy · --:--'
+          ) : (
+            'dd/mm/yyyy'
+          )}
         </span>
         <CalendarIcon size={16} className="datepicker-icon" />
       </button>
@@ -332,7 +357,7 @@ export function DatePicker({
         <div
           className="datepicker-popover"
           role="dialog"
-          aria-label="Chọn ngày"
+          aria-label="Chọn ngày và giờ"
         >
           <div className="datepicker-top">
             <strong>{headerLabel}</strong>
@@ -343,7 +368,7 @@ export function DatePicker({
               onClick={() => {
                 if (min && today < min) return
                 onChange?.(today)
-                setOpen(false)
+                if (!withTime) setOpen(false)
               }}
             >
               Hôm nay
@@ -392,7 +417,7 @@ export function DatePicker({
                   }
                   onClick={() => {
                     onChange?.(cell.key)
-                    setOpen(false)
+                    if (!withTime) setOpen(false)
                   }}
                 >
                   {cell.day}
@@ -400,6 +425,54 @@ export function DatePicker({
               ))}
             </div>
           </div>
+          {withTime && (
+            <div className="datepicker-time-bar">
+              <span className="datepicker-time-label">
+                <Clock3 size={14} />
+                <span>Giờ phút</span>
+              </span>
+              <div className="datepicker-time-controls">
+                <select
+                  aria-label="Giờ"
+                  className="datepicker-time-select"
+                  value={hour}
+                  onChange={(event) => {
+                    if (!value) onChange?.(today)
+                    onTimeChange?.(`${event.target.value}:${minute}`)
+                  }}
+                >
+                  {hours.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+                <span className="datepicker-time-sep">:</span>
+                <select
+                  aria-label="Phút"
+                  className="datepicker-time-select"
+                  value={minute}
+                  onChange={(event) => {
+                    if (!value) onChange?.(today)
+                    onTimeChange?.(`${hour}:${event.target.value}`)
+                  }}
+                >
+                  {minutes.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="datepicker-done-btn"
+                  onClick={() => setOpen(false)}
+                >
+                  Xong
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

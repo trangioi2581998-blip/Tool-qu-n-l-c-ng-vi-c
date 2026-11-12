@@ -25,7 +25,7 @@ function taskConflict(message) {
   return Object.assign(new Error(message), { code: 'TASK_CONFLICT' })
 }
 const taskSelection =
-  'id,team_id,title,description,status,previous_status,status_updated_at,priority,due_date,assigned_on,assigned_by,created_by,created_at,updated_at,version,level,parent_id,sibling_no,work_task_assignees(user_id),work_deadline_requests(status)'
+  'id,team_id,title,description,status,previous_status,status_updated_at,priority,due_date,due_time,assigned_on,assigned_time,assigned_by,created_by,created_at,updated_at,version,level,parent_id,sibling_no,work_task_assignees(user_id),work_deadline_requests(status)'
 const commentSelection = 'id,task_id,author_id,author_name,body,created_at'
 
 export function createBackend(authUser) {

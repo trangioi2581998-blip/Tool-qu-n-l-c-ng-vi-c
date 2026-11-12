@@ -100,7 +100,12 @@ function Deadline({ task, today }) {
       title={late ? 'Đã quá hạn' : 'Hạn hoàn thành'}
     >
       <CalendarDays size={14} />
-      <span>{task.due_date ? dueLabel(task.due_date, today) : '—'}</span>
+      <span>
+        {task.due_date
+          ? dueLabel(task.due_date, today) +
+            (task.due_time ? ' · ' + task.due_time : '')
+          : '—'}
+      </span>
     </span>
   )
 }
@@ -439,6 +444,7 @@ function TaskListRow({
             {task.assigned_on && (
               <span className="assigned-stamp">
                 Giao {fullDate(task.assigned_on).slice(0, 5)}
+                {task.assigned_time ? ' · ' + task.assigned_time : ''}
               </span>
             )}
           </div>
@@ -667,6 +673,7 @@ export function Board({
                   {task.assigned_on && (
                     <span className="assigned-stamp">
                       Giao {fullDate(task.assigned_on).slice(0, 5)}
+                      {task.assigned_time ? ' · ' + task.assigned_time : ''}
                     </span>
                   )}
                   <Deadline task={task} today={today} />

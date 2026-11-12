@@ -298,8 +298,10 @@ function seed() {
         level: index === 1 || index === 8 ? 2 : 1,
         parent_id: index === 1 || index === 8 ? 'demo-task-1' : null,
         due_date: shiftDay(offset, today),
+        due_time: '17:30',
         sibling_no: index === 1 ? 1 : index === 8 ? 2 : null,
         assigned_on: meta?.assigned_on ?? shiftDay(-6, today),
+        assigned_time: '09:00',
         assigned_by: me.id,
         description: description ?? '',
         created_by: me.id,
@@ -348,6 +350,8 @@ function load() {
             fallbackMeta?.assigned_on ??
             task.assigned_on ??
             todayInVietnam(new Date(task.created_at)),
+          assigned_time: task.assigned_time || '09:00',
+          due_time: task.due_time || '17:30',
           previous_status:
             task.previous_status !== undefined
               ? task.previous_status
@@ -676,6 +680,14 @@ export function createDemo(userId, onAccounts) {
         data.assigned_on === undefined
           ? (current?.assigned_on ?? todayInVietnam())
           : data.assigned_on,
+      assigned_time:
+        data.assigned_time === undefined
+          ? (current?.assigned_time ?? '09:00')
+          : data.assigned_time,
+      due_time:
+        data.due_time === undefined
+          ? (current?.due_time ?? '17:30')
+          : data.due_time,
       created_by: current?.created_by ?? user.id,
     }
     if (!canManage(task)) {
