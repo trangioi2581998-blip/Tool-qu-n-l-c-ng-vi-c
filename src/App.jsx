@@ -497,7 +497,7 @@ export default function App({
   const [snapshot, setSnapshot] = useState(null)
   const [view, setView] = useState({ kind: 'mine' })
   const [filters, setFilters] = useState(defaultFilters)
-  const [layout, setLayout] = useState('list')
+  const [layout, setLayout] = useState('board')
   const [query, setQuery] = useState('')
   const [modal, setModal] = useState(null)
   const [mobileNav, setMobileNav] = useState(false)
@@ -1321,11 +1321,7 @@ export default function App({
             </div>
           )}
           {canShowTasks && (
-            <div
-              className={
-                'dashboard-grid' + (layout === 'board' ? ' full' : '')
-              }
-            >
+            <div className="dashboard-grid">
                 <section
                   className={
                     'panel tasks-panel' +
@@ -1351,20 +1347,20 @@ export default function App({
                       <Filters {...{ filters, setFilters, members, isMine }} />
                       <div className="layout-switch" aria-label="Kiểu hiển thị">
                         <button
-                          aria-label="Danh sách"
-                          aria-pressed={layout === 'list'}
-                          title="Danh sách"
-                          onClick={() => setLayout('list')}
-                        >
-                          <List size={17} />
-                        </button>
-                        <button
                           aria-label="Bảng Kanban"
                           aria-pressed={layout === 'board'}
                           title="Bảng Kanban"
                           onClick={() => setLayout('board')}
                         >
                           <LayoutGrid size={16} />
+                        </button>
+                        <button
+                          aria-label="Danh sách"
+                          aria-pressed={layout === 'list'}
+                          title="Danh sách"
+                          onClick={() => setLayout('list')}
+                        >
+                          <List size={17} />
                         </button>
                       </div>
                     </div>
@@ -1406,21 +1402,19 @@ export default function App({
                     <Board {...taskProps} />
                   )}
                 </section>
-                {layout === 'list' && (
-                  <DashboardAside
-                    tasks={baseTasks}
-                    today={today}
-                    onOpen={openTask}
-                    onUpcoming={() => {
-                      setFilters({ ...defaultFilters, date: 'week' })
-                      setQuery('')
-                      listRef.current?.scrollIntoView({
-                        block: 'nearest',
-                        behavior: 'smooth',
-                      })
-                    }}
-                  />
-                )}
+                <DashboardAside
+                  tasks={baseTasks}
+                  today={today}
+                  onOpen={openTask}
+                  onUpcoming={() => {
+                    setFilters({ ...defaultFilters, date: 'week' })
+                    setQuery('')
+                    listRef.current?.scrollIntoView({
+                      block: 'nearest',
+                      behavior: 'smooth',
+                    })
+                  }}
+                />
               </div>
           )}
           {view.kind === 'calendar' && canAdd && (
