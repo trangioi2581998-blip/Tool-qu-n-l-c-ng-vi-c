@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { attachmentName } from './attachments.js'
 
-const URL = import.meta.env.VITE_SUPABASE_URL
-const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+const URL =
+  import.meta.env.VITE_SUPABASE_URL ||
+  'https://ojtandltxsysgtmhmnbx.supabase.co'
+const KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_I_-jAuW2-UEYuH9Ko_YOaw_RGodU1tC'
 export const client = createClient(URL, KEY)
 const PAGE = 400
 function result(response) {
@@ -232,6 +236,19 @@ export function createBackend(authUser) {
       )
     },
     async createMember(team, name, email, password, department = '') {
+      const direct = await client.rpc('work_create_member_direct', {
+        target_team: team.id,
+        member_name: name,
+        member_email: email,
+        member_password: password,
+        member_department: department || '',
+      })
+      if (!direct.error && direct.data) {
+        return direct.data
+      }
+      if (direct.error && direct.error.code !== 'PGRST202') {
+        throw direct.error
+      }
       const response = await client.functions.invoke('provision-work-member', {
         body: { teamId: team.id, name, email, password, department },
       })
@@ -255,6 +272,7 @@ export function createBackend(authUser) {
           member_name: fields.display_name,
           member_email: fields.email,
           member_department: fields.department || '',
+          member_password: fields.password || null,
         }),
       )
     },

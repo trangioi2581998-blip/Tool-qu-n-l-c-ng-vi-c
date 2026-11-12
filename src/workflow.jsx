@@ -275,7 +275,7 @@ export function AccountDialog({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const requirePassword = !editing
-  const minPassLen = isDemo ? 6 : 8
+  const minPassLen = 6
   async function submit(event) {
     event.preventDefault()
     if (busy || !name.trim() || !email.trim()) return

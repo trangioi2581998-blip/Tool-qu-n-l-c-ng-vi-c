@@ -76,9 +76,19 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [department, setDepartment] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
+  const [accounts, setAccounts] = useState([])
+  useEffect(() => {
+    client
+      .rpc('work_list_demo_accounts')
+      .then(({ data }) => {
+        if (Array.isArray(data) && data.length > 0) setAccounts(data)
+      })
+      .catch(() => {})
+  }, [client])
   function switchMode(next) {
     setMode(next)
     setError('')
@@ -103,23 +113,52 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
           email: email.trim(),
           password,
         })
-      if (active === 'signup')
-        result = await client.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: returnUrl.href,
-            data: { display_name: name.trim() },
-          },
+      if (active === 'signup') {
+        const directReg = await client.rpc('work_register_account', {
+          user_name: name.trim(),
+          user_email: email.trim(),
+          user_password: password,
+          user_department: department.trim(),
         })
-      if (active === 'reset')
+        if (!directReg.error) {
+          result = await client.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          })
+        } else if (directReg.error.code === 'PGRST202') {
+          result = await client.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+              emailRedirectTo: returnUrl.href,
+              data: { display_name: name.trim() },
+            },
+          })
+        } else {
+          throw directReg.error
+        }
+      }
+      if (active === 'reset') {
+        if (password && password.length >= 6) {
+          const directReset = await client.rpc('work_reset_password_direct', {
+            user_email: email.trim(),
+            new_password: password,
+          })
+          if (!directReset.error) {
+            setInfo('Đã đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.')
+            setMode('login')
+            setBusy(false)
+            return
+          }
+        }
         result = await client.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: returnUrl.href,
         })
+      }
       if (active === 'recovery')
         result = await client.auth.updateUser({ password })
-      if (result.error) throw result.error
-      if (active === 'signup' && !result.data.session)
+      if (result?.error) throw result.error
+      if (active === 'signup' && !result?.data?.session)
         setInfo(
           'Kiểm tra email để xác nhận tài khoản. Sau đó quay lại đây để đăng nhập.',
         )
@@ -154,16 +193,28 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
       )}
       <form className="auth-form" onSubmit={submit}>
         {active === 'signup' && (
-          <label>
-            Tên hiển thị
-            <input
-              required
-              maxLength={80}
-              value={name}
-              autoComplete="name"
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
+          <>
+            <label>
+              Họ và tên
+              <input
+                required
+                maxLength={80}
+                placeholder="Nhập họ và tên…"
+                value={name}
+                autoComplete="name"
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Phòng ban
+              <input
+                maxLength={120}
+                placeholder="VD: Product & CX, Kỹ thuật…"
+                value={department}
+                onChange={(event) => setDepartment(event.target.value)}
+              />
+            </label>
+          </>
         )}
         {active !== 'recovery' && (
           <label>
@@ -172,27 +223,31 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
               required
               type="email"
               maxLength={254}
+              placeholder="ten@congty.vn"
               value={email}
               autoComplete="email"
               onChange={(event) => setEmail(event.target.value)}
             />
           </label>
         )}
-        {active !== 'reset' && (
-          <label>
-            Mật khẩu
-            <input
-              required
-              type="password"
-              value={password}
-              minLength={active === 'login' ? undefined : 8}
-              autoComplete={
-                active === 'login' ? 'current-password' : 'new-password'
-              }
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-        )}
+        <label>
+          {active === 'reset' ? 'Mật khẩu mới' : 'Mật khẩu'}
+          <input
+            required
+            type="password"
+            placeholder={
+              active === 'reset'
+                ? 'Nhập mật khẩu mới (tối thiểu 6 ký tự)…'
+                : 'Nhập mật khẩu…'
+            }
+            value={password}
+            minLength={active === 'login' ? undefined : 6}
+            autoComplete={
+              active === 'login' ? 'current-password' : 'new-password'
+            }
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
         {active === 'login' && (
           <button
             className="link-button auth-reset"
@@ -232,6 +287,34 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
             </button>
           </p>
         ))}
+      {!recovery && active === 'login' && accounts.length > 0 && (
+        <div className="auth-quick-accounts">
+          <p className="auth-quick-title">
+            Tài khoản trong nhóm (bấm để điền nhanh · MK: 123456)
+          </p>
+          <div className="auth-quick-list">
+            {accounts.map((acc) => (
+              <button
+                key={acc.id}
+                type="button"
+                className="auth-quick-item"
+                onClick={() => {
+                  setEmail(acc.email)
+                  setPassword('123456')
+                  setError('')
+                }}
+              >
+                <Avatar name={acc.name} id={acc.id} size="sm" />
+                <span className="auth-quick-meta">
+                  <strong>{acc.name}</strong>
+                  <small>{acc.email}</small>
+                </span>
+                <span className="auth-quick-role">{acc.roleLabel}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </AuthFrame>
   )
 }
@@ -509,9 +592,13 @@ function DemoApp() {
 }
 
 const root = createRoot(document.getElementById('root'))
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-if (import.meta.env.MODE === 'demo' || (!url && !key)) {
+const url =
+  import.meta.env.VITE_SUPABASE_URL ||
+  'https://ojtandltxsysgtmhmnbx.supabase.co'
+const key =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_I_-jAuW2-UEYuH9Ko_YOaw_RGodU1tC'
+if (import.meta.env.MODE === 'demo') {
   root.render(<DemoApp />)
 } else if (!url || !key || !validUrl(url) || !validPublicKey(key)) {
   root.render(

@@ -248,3 +248,4 @@ grant execute on function public.work_link_member(uuid, uuid, text, text, boolea
 
 notify pgrst, 'reload schema';
 commit;
+
