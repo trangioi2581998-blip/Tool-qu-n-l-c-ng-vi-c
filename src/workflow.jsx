@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { CalendarClock, Check, Mail, UserRoundPlus } from 'lucide-react'
-import { DatePicker, Dialog, ErrorText, readableError } from './ui.jsx'
+import {
+  DatePicker,
+  Dialog,
+  ErrorText,
+  PasswordInput,
+  readableError,
+} from './ui.jsx'
 import {
   fullDate,
   overdue,
@@ -372,9 +378,8 @@ export function AccountDialog({
           <span id="member-password-label">
             {editing ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu'}
           </span>
-          <input
+          <PasswordInput
             required={requirePassword}
-            type="password"
             minLength={minPassLen}
             maxLength={72}
             placeholder={
@@ -395,9 +400,8 @@ export function AccountDialog({
         {(requirePassword || password.length > 0) && (
           <label>
             Xác nhận mật khẩu
-            <input
+            <PasswordInput
               required={requirePassword || password.length > 0}
-              type="password"
               maxLength={72}
               placeholder="Nhập lại mật khẩu…"
               autoComplete="new-password"

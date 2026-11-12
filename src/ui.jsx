@@ -9,6 +9,8 @@ import {
   ChevronUp,
   CircleDashed,
   Clock3,
+  Eye,
+  EyeOff,
   Flag,
   Plus,
   X,
@@ -65,6 +67,24 @@ export function Priority({ priority }) {
       <Flag size={13} strokeWidth={2} />
       {item.label}
     </span>
+  )
+}
+export function PasswordInput(props) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="password-input-wrap">
+      <input {...props} type={visible ? 'text' : 'password'} />
+      <button
+        type="button"
+        className="password-toggle-btn"
+        tabIndex={-1}
+        aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+        title={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+        onClick={() => setVisible((prev) => !prev)}
+      >
+        {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+      </button>
+    </div>
   )
 }
 export function IconButton({ label, children, ...props }) {

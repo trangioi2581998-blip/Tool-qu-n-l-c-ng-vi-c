@@ -19,7 +19,14 @@ import {
   resetDemoPassword,
   setDemoSession,
 } from './demo.js'
-import { Avatar, Brand, ErrorText, HeroArt, readableError } from './ui.jsx'
+import {
+  Avatar,
+  Brand,
+  ErrorText,
+  HeroArt,
+  PasswordInput,
+  readableError,
+} from './ui.jsx'
 import './styles.css'
 
 const labels = {
@@ -232,9 +239,8 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
         )}
         <label>
           {active === 'reset' ? 'Mật khẩu mới' : 'Mật khẩu'}
-          <input
+          <PasswordInput
             required
-            type="password"
             placeholder={
               active === 'reset'
                 ? 'Nhập mật khẩu mới (tối thiểu 6 ký tự)…'
@@ -431,9 +437,8 @@ function DemoAuthForm({ accounts, onAuthenticated }) {
         </label>
         <label>
           {mode === 'reset' ? 'Mật khẩu mới' : 'Mật khẩu'}
-          <input
+          <PasswordInput
             required
-            type="password"
             placeholder={
               mode === 'reset'
                 ? 'Nhập mật khẩu mới (tối thiểu 6 ký tự)…'
