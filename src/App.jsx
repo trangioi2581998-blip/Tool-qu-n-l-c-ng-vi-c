@@ -1384,17 +1384,8 @@ export default function App({
             </section>
           )}
           {loading && (
-            <div className="page-spinner-wrapper" role="status" aria-label="Đang tải dữ liệu">
-              <div className="page-spinner-circle" />
-              <div className="page-spinner-text">
-                {page === 'reports'
-                  ? 'Đang tải báo cáo…'
-                  : page === 'calendar'
-                    ? 'Đang tải lịch…'
-                    : page === 'team'
-                      ? 'Đang tải việc của nhóm…'
-                      : 'Đang tải công việc…'}
-              </div>
+            <div className="panel load-state" role="status">
+              Đang tải công việc…
             </div>
           )}
           {isTeamMissing && !loading && (
