@@ -452,7 +452,7 @@ export function TaskDialog({
   const rootTask = task
     ? task.level === 2
       ? (taskMap[task.parent_id] ?? task)
-      : task
+      : (taskMap[task.id] ?? task)
     : null
   const creatingMain = !task && !config.parent
   const [childDrafts, setChildDrafts] = useState([])
