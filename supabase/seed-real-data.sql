@@ -105,6 +105,17 @@ $$;
 
 revoke all on function nhip_viec_private.upsert_auth_user(uuid, text, text, text) from public, anon, authenticated;
 
+create or replace function nhip_viec_private.set_comment_author()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  select m.display_name into new.author_name
+  from public.work_tasks t join public.work_members m on m.team_id = t.team_id
+  where t.id = new.task_id and m.user_id = coalesce(auth.uid(), new.author_id);
+  if new.author_name is null then raise exception 'Công việc không cho phép bình luận.'; end if;
+  return new;
+end;
+$$;
+
 -- ============================================================================
 -- 2. Direct Member Create / Update / Register / Reset RPCs for Live App
 -- ============================================================================
@@ -515,3 +526,4 @@ $$;
 
 notify pgrst, 'reload schema';
 commit;
+
