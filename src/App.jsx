@@ -58,6 +58,7 @@ import {
   ErrorText,
   HeroArt,
   IconButton,
+  PageLoader,
   readableError,
 } from './ui.jsx'
 
@@ -1384,9 +1385,17 @@ export default function App({
             </section>
           )}
           {loading && (
-            <div className="panel load-state" role="status">
-              Đang tải công việc…
-            </div>
+            <PageLoader
+              text={
+                page === 'reports'
+                  ? 'Đang tổng hợp báo cáo tiến độ…'
+                  : page === 'calendar'
+                    ? 'Đang tải lịch công việc…'
+                    : page === 'team'
+                      ? 'Đang tải công việc của nhóm…'
+                      : 'Đang tải công việc của bạn…'
+              }
+            />
           )}
           {isTeamMissing && !loading && (
             <div className="panel">

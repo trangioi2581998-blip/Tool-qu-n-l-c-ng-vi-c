@@ -528,3 +528,18 @@ export function HeroArt() {
     </div>
   )
 }
+
+export function PageLoader({ text = 'Đang tải dữ liệu…', inline = false }) {
+  return (
+    <div className={'nhip-page-loader' + (inline ? ' is-inline' : '')} role="status">
+      <div className="nhip-loader-graphic">
+        <div className="nhip-loader-ring" />
+        <div className="nhip-loader-ring inner" />
+        <div className="nhip-loader-icon">
+          <CheckSquare2 size={20} strokeWidth={2.4} />
+        </div>
+      </div>
+      <div className="nhip-loader-text">{text}</div>
+    </div>
+  )
+}
