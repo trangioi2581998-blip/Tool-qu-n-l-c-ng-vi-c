@@ -269,51 +269,12 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
           <ArrowRight size={17} />
         </button>
       </form>
-      {!recovery &&
-        (active === 'login' ? (
-          <p className="auth-footer">
-            Bạn chưa có tài khoản?{' '}
-            <button
-              className="link-button"
-              onClick={() => switchMode('signup')}
-            >
-              Đăng ký
-            </button>
-          </p>
-        ) : (
-          <p className="auth-footer">
-            <button className="link-button" onClick={() => switchMode('login')}>
-              Quay lại đăng nhập
-            </button>
-          </p>
-        ))}
-      {!recovery && active === 'login' && accounts.length > 0 && (
-        <div className="auth-quick-accounts">
-          <p className="auth-quick-title">
-            Tài khoản trong nhóm (bấm để điền nhanh · MK: 123456)
-          </p>
-          <div className="auth-quick-list">
-            {accounts.map((acc) => (
-              <button
-                key={acc.id}
-                type="button"
-                className="auth-quick-item"
-                onClick={() => {
-                  setEmail(acc.email)
-                  setPassword('123456')
-                  setError('')
-                }}
-              >
-                <Avatar name={acc.name} id={acc.id} size="sm" />
-                <span className="auth-quick-meta">
-                  <strong>{acc.name}</strong>
-                  <small>{acc.email}</small>
-                </span>
-                <span className="auth-quick-role">{acc.roleLabel}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      {!recovery && active !== 'login' && (
+        <p className="auth-footer">
+          <button className="link-button" onClick={() => switchMode('login')}>
+            Quay lại đăng nhập
+          </button>
+        </p>
       )}
     </AuthFrame>
   )
@@ -507,18 +468,7 @@ function DemoAuthForm({ accounts, onAuthenticated }) {
           <ArrowRight size={17} />
         </button>
       </form>
-      {mode === 'login' ? (
-        <p className="auth-footer">
-          Bạn chưa có tài khoản?{' '}
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => switchMode('signup')}
-          >
-            Đăng ký
-          </button>
-        </p>
-      ) : (
+      {mode !== 'login' && (
         <p className="auth-footer">
           <button
             type="button"
@@ -528,34 +478,6 @@ function DemoAuthForm({ accounts, onAuthenticated }) {
             Quay lại đăng nhập
           </button>
         </p>
-      )}
-      {mode === 'login' && accounts.length > 0 && (
-        <div className="auth-quick-accounts">
-          <p className="auth-quick-title">
-            Tài khoản trong nhóm (bấm để điền nhanh)
-          </p>
-          <div className="auth-quick-list">
-            {accounts.map((acc) => (
-              <button
-                key={acc.id}
-                type="button"
-                className="auth-quick-item"
-                onClick={() => {
-                  setEmail(acc.email)
-                  setPassword(acc.password || '123456')
-                  setError('')
-                }}
-              >
-                <Avatar name={acc.name} id={acc.id} size="sm" />
-                <span className="auth-quick-meta">
-                  <strong>{acc.name}</strong>
-                  <small>{acc.email}</small>
-                </span>
-                <span className="auth-quick-role">{acc.roleLabel}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       )}
     </AuthFrame>
   )
