@@ -1,6 +1,12 @@
 import net from 'node:net'
 import tls from 'node:tls'
 
+const SUPABASE_URL =
+  process.env.VITE_SUPABASE_URL || 'https://ojtandltxsysgtmhmnbx.supabase.co'
+const SUPABASE_KEY =
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_I_-jAuW2-UEYuH9Ko_YOaw_RGodU1tC'
+
 function encodeBase64(str) {
   return Buffer.from(String(str || ''), 'utf8').toString('base64')
 }
@@ -75,47 +81,36 @@ function buildHtmlEmail({ subject, body, actionUrl }) {
 </html>`
 }
 
-function sendViaSmtp({ host, port, user, pass, senderName, senderEmail, to, subject, text, html }) {
+function sendBatchViaSmtp(settings, messages) {
   return new Promise((resolve) => {
-    const cleanHost = String(host || 'smtp.gmail.com').trim()
-    const cleanPort = Number(port) || 465
-    const cleanUser = String(user || '').trim()
-    const cleanPass = String(pass || '').replace(/\s+/g, '')
-    const fromEmail = String(senderEmail || cleanUser).trim()
-    const fromName = String(senderName || 'Nhịp việc').trim()
-    const boundary = '----=_NhipViec_' + Date.now().toString(36)
+    const cleanHost = String(settings?.smtp_host || 'smtp.gmail.com').trim()
+    const cleanPort = Number(settings?.smtp_port) || 465
+    const cleanUser = String(settings?.smtp_user || '').trim()
+    const cleanPass = String(settings?.smtp_pass || '').replace(/\s+/g, '')
+    const fromEmail = String(settings?.sender_email || cleanUser).trim()
+    const fromName = String(settings?.sender_name || 'Nhịp việc').trim()
 
-    const mime = [
-      `From: ${encodeHeader(fromName)} <${fromEmail}>`,
-      `To: <${to}>`,
-      `Subject: ${encodeHeader(subject)}`,
-      `Date: ${new Date().toUTCString()}`,
-      'MIME-Version: 1.0',
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      '',
-      `--${boundary}`,
-      'Content-Type: text/plain; charset="UTF-8"',
-      'Content-Transfer-Encoding: base64',
-      '',
-      encodeBase64(text),
-      '',
-      `--${boundary}`,
-      'Content-Type: text/html; charset="UTF-8"',
-      'Content-Transfer-Encoding: base64',
-      '',
-      encodeBase64(html),
-      '',
-      `--${boundary}--`,
-      '',
-      '.',
-    ].join('\r\n')
+    if (!cleanUser || !cleanPass) {
+      resolve(
+        messages.map((m) => ({
+          id: m.id,
+          lease_id: m.lease_id,
+          email: m.to,
+          delivered: false,
+          detail: 'Chưa cấu hình tài khoản hoặc mật khẩu SMTP',
+        })),
+      )
+      return
+    }
 
     let socket = null
     let finished = false
     let buffer = ''
-    let step = 0
+    let phase = 'GREETING'
+    let msgIdx = 0
+    const outcomes = new Array(messages.length).fill(null)
 
-    const finish = (delivered, detail) => {
+    const finishAll = (fallbackError) => {
       if (finished) return
       finished = true
       try {
@@ -123,35 +118,82 @@ function sendViaSmtp({ host, port, user, pass, senderName, senderEmail, to, subj
       } catch {
         // ignore
       }
-      resolve({ delivered, detail })
+      resolve(
+        messages.map((m, i) => ({
+          id: m.id,
+          lease_id: m.lease_id,
+          email: m.to,
+          delivered: outcomes[i]?.delivered ?? false,
+          detail: outcomes[i]?.detail ?? (fallbackError || 'Lỗi kết nối SMTP'),
+        })),
+      )
     }
 
     const timer = setTimeout(() => {
-      finish(false, 'SMTP timeout sau 15 giây')
-    }, 15000)
+      finishAll('SMTP timeout sau 25 giây')
+    }, 25000)
 
     const writeCmd = (cmd) => {
       socket.write(cmd + '\r\n')
     }
 
-    const handleResponse = (code, fullText) => {
-      if (code >= 400) {
+    const buildMime = (msg) => {
+      const boundary = '----=_NhipViec_' + Date.now().toString(36) + '_' + msgIdx
+      return [
+        `From: ${encodeHeader(fromName)} <${fromEmail}>`,
+        `To: <${msg.to}>`,
+        `Subject: ${encodeHeader(msg.subject)}`,
+        `Date: ${new Date().toUTCString()}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Transfer-Encoding: base64',
+        '',
+        encodeBase64(msg.text),
+        '',
+        `--${boundary}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        'Content-Transfer-Encoding: base64',
+        '',
+        encodeBase64(msg.html),
+        '',
+        `--${boundary}--`,
+        '',
+        '.',
+      ].join('\r\n')
+    }
+
+    const startNextMessage = () => {
+      if (msgIdx >= messages.length) {
+        phase = 'QUIT'
         clearTimeout(timer)
-        finish(false, `SMTP ${code}: ${fullText.trim()}`)
+        writeCmd('QUIT')
+        finishAll('OK')
         return
       }
-      if (step === 0 && code === 220) {
-        step = 1
-        writeCmd(`EHLO nhipviec.local`)
-      } else if (step === 1 && code === 250) {
+      phase = 'MAIL_FROM'
+      writeCmd(`MAIL FROM:<${fromEmail}>`)
+    }
+
+    const handleResponse = (code, fullText) => {
+      if (phase === 'GREETING' && code === 220) {
+        phase = 'EHLO'
+        writeCmd('EHLO nhipviec.local')
+        return
+      }
+      if (phase === 'EHLO' && code === 250) {
         if (cleanPort !== 465 && !socket.encrypted && fullText.includes('STARTTLS')) {
-          step = 1.5
+          phase = 'STARTTLS'
           writeCmd('STARTTLS')
         } else {
-          step = 2
+          phase = 'AUTH'
           writeCmd('AUTH LOGIN')
         }
-      } else if (step === 1.5 && code === 220) {
+        return
+      }
+      if (phase === 'STARTTLS' && code === 220) {
         const tlsSocket = tls.connect({
           socket,
           servername: cleanHost,
@@ -160,32 +202,63 @@ function sendViaSmtp({ host, port, user, pass, senderName, senderEmail, to, subj
         socket = tlsSocket
         socket.encrypted = true
         attachListeners(socket)
-        step = 1
-        writeCmd(`EHLO nhipviec.local`)
-      } else if (step === 2 && code === 334) {
-        step = 3
-        writeCmd(encodeBase64(cleanUser))
-      } else if (step === 3 && code === 334) {
-        step = 4
-        writeCmd(encodeBase64(cleanPass))
-      } else if (step === 4 && code === 235) {
-        step = 5
-        writeCmd(`MAIL FROM:<${fromEmail}>`)
-      } else if (step === 5 && code === 250) {
-        step = 6
-        writeCmd(`RCPT TO:<${to}>`)
-      } else if (step === 6 && (code === 250 || code === 251)) {
-        step = 7
-        writeCmd('DATA')
-      } else if (step === 7 && code === 354) {
-        step = 8
-        writeCmd(mime)
-      } else if (step === 8 && code === 250) {
-        step = 9
-        clearTimeout(timer)
-        writeCmd('QUIT')
-        finish(true, 'OK')
+        phase = 'EHLO'
+        writeCmd('EHLO nhipviec.local')
+        return
       }
+      if (phase === 'AUTH' && code === 334) {
+        phase = 'AUTH_USER'
+        writeCmd(encodeBase64(cleanUser))
+        return
+      }
+      if (phase === 'AUTH_USER' && code === 334) {
+        phase = 'AUTH_PASS'
+        writeCmd(encodeBase64(cleanPass))
+        return
+      }
+      if (phase === 'AUTH_PASS' && code === 235) {
+        startNextMessage()
+        return
+      }
+      if (phase === 'MAIL_FROM' && code === 250) {
+        phase = 'RCPT_TO'
+        writeCmd(`RCPT TO:<${messages[msgIdx].to}>`)
+        return
+      }
+      if (phase === 'RCPT_TO' && (code === 250 || code === 251)) {
+        phase = 'DATA'
+        writeCmd('DATA')
+        return
+      }
+      if (phase === 'DATA' && code === 354) {
+        phase = 'BODY'
+        writeCmd(buildMime(messages[msgIdx]))
+        return
+      }
+      if (phase === 'BODY' && code === 250) {
+        outcomes[msgIdx] = { delivered: true, detail: 'OK' }
+        msgIdx += 1
+        startNextMessage()
+        return
+      }
+
+      const errMsg = `SMTP ${code}: ${fullText.trim()}`
+      if (
+        phase === 'MAIL_FROM' ||
+        phase === 'RCPT_TO' ||
+        phase === 'DATA' ||
+        phase === 'BODY'
+      ) {
+        outcomes[msgIdx] = { delivered: false, detail: errMsg }
+        msgIdx += 1
+        if (msgIdx < messages.length) {
+          phase = 'RSET'
+          writeCmd('RSET')
+          return
+        }
+      }
+      clearTimeout(timer)
+      finishAll(errMsg)
     }
 
     const attachListeners = (sock) => {
@@ -201,17 +274,21 @@ function sendViaSmtp({ host, port, user, pass, senderName, senderEmail, to, subj
             const code = Number(line.slice(0, 3))
             const textResp = collected.join(' | ')
             collected = []
-            handleResponse(code, textResp)
+            if (phase === 'RSET') {
+              startNextMessage()
+            } else {
+              handleResponse(code, textResp)
+            }
           }
         }
       })
       sock.on('error', (err) => {
         clearTimeout(timer)
-        finish(false, err?.message || 'Lỗi kết nối SMTP')
+        finishAll(err?.message || 'Lỗi kết nối SMTP')
       })
       sock.on('close', () => {
         clearTimeout(timer)
-        if (!finished) finish(false, 'Kết nối SMTP bị đóng sớm')
+        if (!finished) finishAll('Kết nối SMTP bị đóng sớm')
       })
     }
 
@@ -234,14 +311,12 @@ function sendViaSmtp({ host, port, user, pass, senderName, senderEmail, to, subj
       attachListeners(socket)
     } catch (err) {
       clearTimeout(timer)
-      finish(false, err?.message || 'Không thể khởi tạo kết nối SMTP')
+      finishAll(err?.message || 'Không thể khởi tạo kết nối SMTP')
     }
   })
 }
 
-async function sendSingleEmail(settings, { to, subject, body, actionUrl }) {
-  const text = actionUrl ? `${body}\n\nMở Nhịp việc: ${actionUrl}` : body
-  const html = buildHtmlEmail({ subject, body, actionUrl })
+async function sendSingleViaApi(settings, { to, subject, text, html }) {
   const provider = settings?.provider || 'smtp'
 
   if (provider === 'google_script') {
@@ -301,39 +376,31 @@ async function sendSingleEmail(settings, { to, subject, body, actionUrl }) {
     }
   }
 
-  return sendViaSmtp({
-    host: settings?.smtp_host || 'smtp.gmail.com',
-    port: settings?.smtp_port || 465,
-    user: settings?.smtp_user || '',
-    pass: settings?.smtp_pass || '',
-    senderName: settings?.sender_name || 'Nhịp việc',
-    senderEmail: settings?.sender_email || settings?.smtp_user || '',
-    to,
-    subject,
-    text,
-    html,
-  })
+  const [res] = await sendBatchViaSmtp(settings, [
+    { id: 'test', lease_id: 'test', to, subject, text, html },
+  ])
+  return { delivered: res.delivered, detail: res.detail }
 }
 
-export async function handleEmailDispatchPayload(payload) {
-  const { settings, jobs = [], baseUrl = '', testEmail = '' } = payload || {}
-
-  if (testEmail) {
-    const res = await sendSingleEmail(settings, {
-      to: testEmail,
-      subject: '[Nhịp việc] Kiểm tra kết nối gửi Email thông báo',
-      body:
-        'Công việc: Kiểm tra cấu hình gửi Email tự động\n' +
-        'Hệ thống gửi thông báo qua Email của Nhịp việc đã hoạt động thành công.\n' +
-        'Trạng thái hiện tại: Hoàn thành\n' +
-        'Mỗi khi thêm, sửa, xóa, đổi trạng thái hoặc bình luận công việc, email sẽ được gửi tự động đến tài khoản.',
-      actionUrl: baseUrl || 'https://tool-qu-n-l-c-ng-vi-c.vercel.app/',
-    })
-    return { testResult: res }
+async function callSupabaseRpc(fnName, params) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(`RPC ${fnName} HTTP ${response.status}: ${text}`)
   }
+  return response.json().catch(() => null)
+}
 
-  const results = []
-  for (const job of jobs) {
+function prepareMessages(jobs, baseUrl) {
+  return jobs.map((job) => {
     let actionUrl = baseUrl || 'https://tool-qu-n-l-c-ng-vi-c.vercel.app/'
     try {
       const url = new URL(actionUrl)
@@ -343,20 +410,97 @@ export async function handleEmailDispatchPayload(payload) {
     } catch {
       // keep default URL
     }
-    const outcome = await sendSingleEmail(settings, {
-      to: job.email,
+    const text = actionUrl ? `${job.body}\n\nMở Nhịp việc: ${actionUrl}` : job.body
+    const html = buildHtmlEmail({
       subject: job.subject,
       body: job.body,
       actionUrl,
     })
-    results.push({
+    return {
       id: job.id,
       lease_id: job.lease_id,
-      email: job.email,
+      to: job.email,
+      subject: job.subject,
+      text,
+      html,
+    }
+  })
+}
+
+async function dispatchBatch(settings, jobs, baseUrl) {
+  if (!jobs?.length) return []
+  const prepared = prepareMessages(jobs, baseUrl)
+  if ((settings?.provider || 'smtp') === 'smtp') {
+    return sendBatchViaSmtp(settings, prepared)
+  }
+  const results = []
+  for (const msg of prepared) {
+    const outcome = await sendSingleViaApi(settings, msg)
+    results.push({
+      id: msg.id,
+      lease_id: msg.lease_id,
+      email: msg.to,
       delivered: outcome.delivered,
       detail: outcome.detail,
     })
   }
+  return results
+}
+
+export async function handleEmailDispatchPayload(payload) {
+  const { settings, jobs = [], baseUrl = '', testEmail = '', worker_secret = '' } =
+    payload || {}
+
+  if (worker_secret) {
+    const claimed = await callSupabaseRpc('work_claim_pending_emails_worker', {
+      secret: worker_secret,
+      batch_size: 20,
+    })
+    if (!claimed?.configured || !claimed?.jobs?.length) {
+      return { configured: Boolean(claimed?.configured), sent: 0, failed: 0 }
+    }
+    const results = await dispatchBatch(
+      claimed.settings,
+      claimed.jobs,
+      baseUrl || 'https://tool-qu-n-l-c-ng-vi-c.vercel.app/',
+    )
+    let sent = 0
+    let failed = 0
+    for (const item of results) {
+      await callSupabaseRpc('work_complete_pending_email_worker', {
+        secret: worker_secret,
+        message_id: item.id,
+        claim_id: item.lease_id,
+        delivered: Boolean(item.delivered),
+        detail: item.detail || null,
+      }).catch(() => null)
+      if (item.delivered) sent += 1
+      else failed += 1
+    }
+    return { configured: true, sent, failed }
+  }
+
+  if (testEmail) {
+    const body =
+      'Công việc: Kiểm tra cấu hình gửi Email tự động\n' +
+      'Hệ thống gửi thông báo qua Email của Nhịp việc đã hoạt động thành công.\n' +
+      'Trạng thái hiện tại: Hoàn thành\n' +
+      'Mỗi khi thêm, sửa, xóa, đổi trạng thái hoặc bình luận công việc, email sẽ được gửi tự động đến tài khoản.'
+    const actionUrl = baseUrl || 'https://tool-qu-n-l-c-ng-vi-c.vercel.app/'
+    const res = await sendSingleViaApi(settings, {
+      to: testEmail,
+      subject: '[Nhịp việc] Kiểm tra kết nối gửi Email thông báo',
+      text: `${body}\n\nMở Nhịp việc: ${actionUrl}`,
+      html: buildHtmlEmail({
+        subject: '[Nhịp việc] Kiểm tra kết nối gửi Email thông báo',
+        body,
+        actionUrl,
+      }),
+    })
+    return { testResult: res }
+  }
+
+  const results = await dispatchBatch(settings, jobs, baseUrl)
   return { results }
 }
 
@@ -386,4 +530,3 @@ export default async function handler(req, res) {
     res.end(JSON.stringify({ error: err?.message || 'Email dispatch error' }))
   }
 }
-

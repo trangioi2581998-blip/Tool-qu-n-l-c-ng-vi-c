@@ -663,19 +663,11 @@ export function EmailDemoDialog({
                   <Settings size={15} /> Cấu hình gửi Email
                 </button>
               ) : (
-                pendingCount > 0 && (
-                  <button
-                    type="button"
-                    className="button secondary"
-                    disabled={dispatching}
-                    onClick={handleDispatchNow}
-                  >
-                    <RefreshCw size={15} />{' '}
-                    {dispatching
-                      ? 'Đang gửi…'
-                      : `Gửi ngay (${pendingCount} chờ)`}
-                  </button>
-                )
+                <span className="pill-soft">
+                  {pendingCount > 0
+                    ? `Đang tự động gửi (${pendingCount} chờ)…`
+                    : 'Tự động gửi ngầm'}
+                </span>
               )}
             </div>
           </div>
