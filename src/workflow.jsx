@@ -115,8 +115,11 @@ export function DeadlineExtension({
         <h3>
           <CalendarClock size={16} /> Gia hạn công việc
           {isOverdue && (
-            <span className="badge amber">
-              Quá hạn (so với hôm nay {fullDate(today)})
+            <span
+              className="badge amber"
+              title={'Quá hạn so với hôm nay ' + fullDate(today)}
+            >
+              Quá hạn
             </span>
           )}
         </h3>

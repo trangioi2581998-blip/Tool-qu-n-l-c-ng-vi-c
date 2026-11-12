@@ -640,7 +640,7 @@ export function TaskDialog({
             {activeTitleLabel}
             <input
               required
-              autoFocus={!task || task.id === activeRoot?.id}
+              autoFocus={!task}
               maxLength={160}
               aria-label={
                 level === 1
@@ -930,6 +930,7 @@ export function TaskDialog({
         )
       }
       wide
+      autoFocus={!task}
       onClose={() => {
         if (!busy) onClose()
       }}
@@ -1007,7 +1008,6 @@ export function TaskDialog({
                           Tên việc con
                           <input
                             required
-                            autoFocus={task?.id === item.id}
                             maxLength={160}
                             aria-label={'Tên việc con ' + code}
                             placeholder="Nhập tên việc con"

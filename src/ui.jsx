@@ -144,19 +144,25 @@ export function Dialog({
   onClose,
   children,
   wide = false,
+  autoFocus = true,
 }) {
   const ref = useRef(null)
   useEffect(() => {
     const dialog = ref.current
     dialog.showModal()
-    dialog.querySelector('form input:enabled')?.focus()
+    if (autoFocus) {
+      dialog.querySelector('form input:enabled')?.focus()
+    } else {
+      dialog.focus({ preventScroll: true })
+    }
     return () => {
       if (dialog.open) dialog.close()
     }
-  }, [])
+  }, [autoFocus])
   return (
     <dialog
       ref={ref}
+      tabIndex={-1}
       className={'dialog' + (wide ? ' dialog-wide' : '')}
       aria-labelledby="dialog-title"
       onCancel={(event) => {
