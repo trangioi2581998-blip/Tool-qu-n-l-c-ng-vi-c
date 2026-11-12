@@ -6,6 +6,7 @@ import {
   LockKeyhole,
   MessageCircle,
   Plus,
+  Repeat,
   Send,
   Trash2,
   UsersRound,
@@ -22,8 +23,11 @@ import {
   readableError,
 } from './ui.jsx'
 import {
+  fullDate,
   normalize,
+  parseDay,
   priorities,
+  shiftDay,
   shortDateTime,
   statuses,
   taskLevelCode,
@@ -435,6 +439,260 @@ function TaskAttributes({
   )
 }
 
+function buildRecurringCycles({
+  title,
+  assignedOn,
+  due,
+  repeatInterval,
+  customWeeks,
+  repeatRangeType,
+  repeatCount,
+  repeatUntil,
+  repeatNaming,
+}) {
+  const weeks =
+    repeatInterval === 'custom'
+      ? Math.max(1, Math.min(52, Number(customWeeks) || 1))
+      : Number(repeatInterval) || 0
+  if (!weeks || !assignedOn || !due || due < assignedOn) return []
+
+  const baseTitle = title.trim() || 'Công việc định kỳ'
+  const startAssigned = parseDay(assignedOn)
+  const startDue = parseDay(due)
+  const rawList = []
+
+  if (repeatRangeType === 'until' && repeatUntil && repeatUntil >= assignedOn) {
+    for (let k = 0; k < 52; k++) {
+      const offsetDays = k * weeks * 7
+      const cycleAssigned = shiftDay(offsetDays, startAssigned)
+      if (cycleAssigned > repeatUntil) break
+      const cycleDue = shiftDay(offsetDays, startDue)
+      rawList.push({ k, offsetDays, assignedOn: cycleAssigned, due: cycleDue })
+    }
+  } else {
+    const count = Math.max(2, Math.min(52, Number(repeatCount) || 4))
+    for (let k = 0; k < count; k++) {
+      const offsetDays = k * weeks * 7
+      rawList.push({
+        k,
+        offsetDays,
+        assignedOn: shiftDay(offsetDays, startAssigned),
+        due: shiftDay(offsetDays, startDue),
+      })
+    }
+  }
+
+  return rawList.map((item, idx) => {
+    const cycleNo = idx + 1
+    const shortDue = fullDate(item.due).slice(0, 5)
+    let cycleTitle = baseTitle
+    if (repeatNaming === 'cycle_date') {
+      cycleTitle = `${baseTitle} (Kỳ ${cycleNo} · ${shortDue})`
+    } else if (repeatNaming === 'date') {
+      cycleTitle = `${baseTitle} (${fullDate(item.due)})`
+    }
+    return {
+      ...item,
+      cycleNo,
+      title: cycleTitle.slice(0, 160),
+    }
+  })
+}
+
+function RecurringScheduleSection({
+  assignedOn,
+  assignedTime,
+  due,
+  dueTime,
+  repeatInterval,
+  setRepeatInterval,
+  customWeeks,
+  setCustomWeeks,
+  repeatRangeType,
+  setRepeatRangeType,
+  repeatCount,
+  setRepeatCount,
+  repeatUntil,
+  setRepeatUntil,
+  repeatNaming,
+  setRepeatNaming,
+  cycles,
+  excludedCycles,
+  setExcludedCycles,
+}) {
+  const isRepeating = repeatInterval !== '0'
+  const activeCount = cycles.filter(
+    (c) => !excludedCycles.includes(c.k),
+  ).length
+
+  return (
+    <section className="task-relations recurring-section">
+      <header>
+        <h3>
+          <Repeat size={15} /> Lặp lại định kỳ (Tạo nhiều kỳ cùng lúc)
+        </h3>
+        {isRepeating && activeCount > 1 && (
+          <span className="badge purple">Sẽ tạo {activeCount} kỳ</span>
+        )}
+      </header>
+      <div className="recurring-controls">
+        <div className="form-grid">
+          <label>
+            Chu kỳ lặp lại
+            <select
+              value={repeatInterval}
+              onChange={(e) => {
+                setRepeatInterval(e.target.value)
+                setExcludedCycles([])
+              }}
+            >
+              <option value="0">Không lặp lại (Chỉ tạo 1 lần)</option>
+              <option value="1">Hàng tuần (1 tuần/lần)</option>
+              <option value="2">2 tuần/lần</option>
+              <option value="3">3 tuần/lần</option>
+              <option value="4">4 tuần/lần (1 tháng)</option>
+              <option value="custom">Tùy chỉnh số tuần…</option>
+            </select>
+          </label>
+          {repeatInterval === 'custom' && (
+            <label>
+              Số tuần mỗi chu kỳ
+              <input
+                type="number"
+                min={1}
+                max={52}
+                value={customWeeks}
+                onChange={(e) => {
+                  setCustomWeeks(e.target.value)
+                  setExcludedCycles([])
+                }}
+              />
+            </label>
+          )}
+          {isRepeating && (
+            <label>
+              Cách giới hạn kỳ tạo
+              <select
+                value={repeatRangeType}
+                onChange={(e) => {
+                  setRepeatRangeType(e.target.value)
+                  setExcludedCycles([])
+                }}
+              >
+                <option value="count">Theo tổng số kỳ muốn tạo</option>
+                <option value="until">Lặp đến hết ngày kết thúc</option>
+              </select>
+            </label>
+          )}
+        </div>
+
+        {isRepeating && (
+          <div className="form-grid">
+            {repeatRangeType === 'count' ? (
+              <label>
+                Số lượng kỳ tạo ra (từ 2 đến 52 kỳ)
+                <input
+                  type="number"
+                  min={2}
+                  max={52}
+                  value={repeatCount}
+                  onChange={(e) => {
+                    setRepeatCount(e.target.value)
+                    setExcludedCycles([])
+                  }}
+                />
+              </label>
+            ) : (
+              <div className="datepicker-field">
+                <span className="field-label">Lặp đến hết ngày</span>
+                <DatePicker
+                  value={repeatUntil}
+                  min={assignedOn}
+                  align="right"
+                  onChange={(val) => {
+                    setRepeatUntil(val)
+                    setExcludedCycles([])
+                  }}
+                />
+              </div>
+            )}
+            <label>
+              Cách đánh dấu tên từng kỳ
+              <select
+                value={repeatNaming}
+                onChange={(e) => setRepeatNaming(e.target.value)}
+              >
+                <option value="cycle_date">
+                  Kèm số kỳ & ngày hạn (VD: Tên việc (Kỳ 1 · 16/11))
+                </option>
+                <option value="date">
+                  Kèm ngày hạn (VD: Tên việc (16/11/2026))
+                </option>
+                <option value="plain">Giữ nguyên tên công việc</option>
+              </select>
+            </label>
+          </div>
+        )}
+
+        {isRepeating && (!assignedOn || !due || due < assignedOn) && (
+          <p className="muted field-hint">
+            Hãy chọn Ngày giao và Ngày hoàn thành (hạn) hợp lệ ở trên để xem
+            trước danh sách các kỳ.
+          </p>
+        )}
+
+        {isRepeating && cycles.length > 0 && (
+          <div className="recurring-preview">
+            <div className="recurring-preview-head">
+              <strong>
+                Danh sách các kỳ sẽ tạo ({activeCount}/{cycles.length} kỳ)
+              </strong>
+              <small className="muted">
+                Bỏ tích kỳ nào bạn muốn bỏ qua (VD: tuần nghỉ lễ)
+              </small>
+            </div>
+            <div className="recurring-preview-list">
+              {cycles.map((c) => {
+                const checked = !excludedCycles.includes(c.k)
+                return (
+                  <label
+                    key={c.k}
+                    className={
+                      'recurring-preview-item' + (!checked ? ' is-skipped' : '')
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setExcludedCycles((prev) =>
+                          checked
+                            ? [...prev, c.k]
+                            : prev.filter((item) => item !== c.k),
+                        )
+                      }}
+                    />
+                    <span className="recurring-cycle-badge">
+                      Kỳ {c.cycleNo}
+                    </span>
+                    <span className="recurring-cycle-info">
+                      <strong>{c.title}</strong>
+                      <small>
+                        Giao: {fullDate(c.assignedOn)} {assignedTime} → Hạn:{' '}
+                        {fullDate(c.due)} {dueTime}
+                      </small>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function requiredSchedule(values, teamTask) {
   if (teamTask && !values.assignees.length)
     return 'Hãy chọn ít nhất một người thực hiện.'
@@ -533,6 +791,31 @@ export function TaskDialog({
   )
   const [assignedTime, setAssignedTime] = useState(
     activeRoot?.assigned_time || config.parent?.assigned_time || '09:00',
+  )
+  const [repeatInterval, setRepeatInterval] = useState('0')
+  const [customWeeks, setCustomWeeks] = useState(2)
+  const [repeatRangeType, setRepeatRangeType] = useState('count')
+  const [repeatCount, setRepeatCount] = useState(4)
+  const [repeatUntil, setRepeatUntil] = useState(() =>
+    shiftDay(28, parseDay(today)),
+  )
+  const [repeatNaming, setRepeatNaming] = useState('cycle_date')
+  const [excludedCycles, setExcludedCycles] = useState([])
+  const allRecurringCycles = !task
+    ? buildRecurringCycles({
+        title,
+        assignedOn,
+        due,
+        repeatInterval,
+        customWeeks,
+        repeatRangeType,
+        repeatCount,
+        repeatUntil,
+        repeatNaming,
+      })
+    : []
+  const activeRecurringCycles = allRecurringCycles.filter(
+    (c) => !excludedCycles.includes(c.k),
   )
   const [pendingExtension, setPendingExtension] = useState(false)
   const [error, setError] = useState('')
@@ -674,6 +957,29 @@ export function TaskDialog({
         pending={pendingExtension}
         blockDone={remaining > 0}
       />
+      {!task && (
+        <RecurringScheduleSection
+          assignedOn={assignedOn}
+          assignedTime={assignedTime}
+          due={due}
+          dueTime={dueTime}
+          repeatInterval={repeatInterval}
+          setRepeatInterval={setRepeatInterval}
+          customWeeks={customWeeks}
+          setCustomWeeks={setCustomWeeks}
+          repeatRangeType={repeatRangeType}
+          setRepeatRangeType={setRepeatRangeType}
+          repeatCount={repeatCount}
+          setRepeatCount={setRepeatCount}
+          repeatUntil={repeatUntil}
+          setRepeatUntil={setRepeatUntil}
+          repeatNaming={repeatNaming}
+          setRepeatNaming={setRepeatNaming}
+          cycles={allRecurringCycles}
+          excludedCycles={excludedCycles}
+          setExcludedCycles={setExcludedCycles}
+        />
+      )}
       <TaskAttachments
         code={activeCode}
         task={activeRoot}
@@ -871,6 +1177,45 @@ export function TaskDialog({
             parent_id: level === 1 ? null : parent,
           }
         : {}
+      if (!task && repeatInterval !== '0') {
+        if (!activeRecurringCycles.length) {
+          setError('Hãy chọn ít nhất 1 kỳ lặp lại trong danh sách.')
+          setBusy(false)
+          return
+        }
+        const cyclesPayload = activeRecurringCycles.map((cycle) => ({
+          main: {
+            ...fields,
+            title: cycle.title,
+            due_date: cycle.due,
+            due_time: dueTime || '17:30',
+            assigned_on: cycle.assignedOn,
+            assigned_time: assignedTime || '09:00',
+            ...structure,
+          },
+          children: childTasks.map((c) => ({
+            ...c,
+            assigned_on: c.assigned_on
+              ? shiftDay(cycle.offsetDays, parseDay(c.assigned_on))
+              : cycle.assignedOn,
+            due_date: c.due_date
+              ? shiftDay(cycle.offsetDays, parseDay(c.due_date))
+              : cycle.due,
+          })),
+        }))
+        await onSave(
+          { ...fields, ...dates, ...structure },
+          activeRoot,
+          childTasks,
+          {
+            main: attachments,
+            children: childDrafts.map((child) => child.attachments),
+          },
+          updatedChildren,
+          cyclesPayload,
+        )
+        return
+      }
       await onSave(
         { ...fields, ...dates, ...structure },
         activeRoot,
@@ -1302,9 +1647,11 @@ export function TaskDialog({
                   ? 'Đang lưu…'
                   : task
                     ? 'Lưu thay đổi'
-                    : childDrafts.length
-                      ? 'Lưu công việc'
-                      : 'Tạo công việc'}
+                    : repeatInterval !== '0' && activeRecurringCycles.length > 0
+                      ? `Tạo ${activeRecurringCycles.length} kỳ công việc`
+                      : childDrafts.length
+                        ? 'Lưu công việc'
+                        : 'Tạo công việc'}
               </button>
             )}
           </div>

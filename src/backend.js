@@ -47,9 +47,99 @@ export function createBackend(authUser) {
         .eq('id', id)
         .single(),
     )
+  let dispatching = false
+  async function dispatchPendingEmails() {
+    if (dispatching) return { sent: 0, failed: 0 }
+    dispatching = true
+    try {
+      const claimed = await client
+        .rpc('work_claim_pending_emails', { batch_size: 15 })
+        .then(result)
+        .catch(() => null)
+      if (!claimed?.configured || !claimed?.jobs?.length) {
+        return {
+          configured: Boolean(claimed?.configured),
+          sent: 0,
+          failed: 0,
+        }
+      }
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings: claimed.settings,
+          jobs: claimed.jobs,
+          baseUrl: location.origin + location.pathname,
+        }),
+      })
+      if (!response.ok) return { configured: true, sent: 0, failed: claimed.jobs.length }
+      const { results = [] } = await response.json()
+      let sent = 0
+      let failed = 0
+      for (const item of results) {
+        await client
+          .rpc('work_complete_pending_email', {
+            message_id: item.id,
+            claim_id: item.lease_id,
+            delivered: Boolean(item.delivered),
+            detail: item.detail || null,
+          })
+          .catch(() => null)
+        if (item.delivered) sent += 1
+        else failed += 1
+      }
+      return { configured: true, sent, failed }
+    } catch {
+      return { sent: 0, failed: 0 }
+    } finally {
+      dispatching = false
+    }
+  }
+
   return {
     mode: 'live',
     user,
+    dispatchPendingEmails,
+    async listNotifications() {
+      return result(
+        await client.rpc('work_list_my_notifications', { limit_count: 50 }),
+      )
+    },
+    async markNotificationsRead() {
+      await client.rpc('work_mark_notifications_read').catch(() => null)
+    },
+    async getEmailSettings() {
+      return result(await client.rpc('work_get_email_settings'))
+    },
+    async saveEmailSettings(settings) {
+      const saved = result(
+        await client.rpc('work_save_email_settings', { settings }),
+      )
+      void dispatchPendingEmails()
+      return saved
+    },
+    async sendTestEmail(settings, testEmail) {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings,
+          testEmail,
+          baseUrl: location.origin + location.pathname,
+        }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(data?.error || 'Không thể kết nối máy chủ gửi email.')
+      }
+      if (!data?.testResult?.delivered) {
+        throw new Error(
+          data?.testResult?.detail ||
+            'Gửi email thử không thành công. Hãy kiểm tra lại thông tin cấu hình.',
+        )
+      }
+      return data.testResult
+    },
     listTeams: () =>
       allRows(() =>
         client
@@ -93,6 +183,7 @@ export function createBackend(authUser) {
           extension_pending: work_deadline_requests.length > 0,
         }),
       )
+      void dispatchPendingEmails()
       return { members, tasks, deletedTasks }
     },
     async saveTask(data, previous) {
@@ -103,15 +194,27 @@ export function createBackend(authUser) {
       })
       if (error?.code === 'NV001') throw taskConflict(error.message)
       if (error) throw error
+      void dispatchPendingEmails()
       return task
     },
     async createTaskWithChildren(data, children) {
-      return result(
+      const res = result(
         await client.rpc('work_create_task_with_children', {
           main_task: data,
           child_titles: children,
         }),
       )
+      void dispatchPendingEmails()
+      return res
+    },
+    async createRecurringTasks(cycles) {
+      const res = result(
+        await client.rpc('work_create_recurring_tasks', {
+          cycles,
+        }),
+      )
+      void dispatchPendingEmails()
+      return res
     },
     async deleteTask(task) {
       const deleted = result(
@@ -127,6 +230,7 @@ export function createBackend(authUser) {
         throw taskConflict(
           'Công việc đã thay đổi hoặc quyền xóa đã được cập nhật. Hãy đóng và mở lại công việc.',
         )
+      void dispatchPendingEmails()
     },
     async listAttachments(task) {
       const rows = []
@@ -200,13 +304,15 @@ export function createBackend(authUser) {
           .order('id'),
       ),
     async addComment(task, body) {
-      return result(
+      const res = result(
         await client
           .from('work_comments')
           .insert({ task_id: task.id, body })
           .select(commentSelection)
           .single(),
       )
+      void dispatchPendingEmails()
+      return res
     },
     listExtensions: (task) =>
       allRows(() =>
@@ -218,22 +324,26 @@ export function createBackend(authUser) {
           .order('id'),
       ),
     async requestExtension(task, due, reason) {
-      return result(
+      const res = result(
         await client.rpc('work_request_extension', {
           target_task: task.id,
           new_due_date: due,
           request_reason: reason,
         }),
       )
+      void dispatchPendingEmails()
+      return res
     },
     async reviewExtension(request, approve, note) {
-      return result(
+      const res = result(
         await client.rpc('work_review_extension', {
           request_id: request.id,
           approve,
           note,
         }),
       )
+      void dispatchPendingEmails()
+      return res
     },
     async createMember(team, name, email, password, department = '') {
       const direct = await client.rpc('work_create_member_direct', {
@@ -244,6 +354,7 @@ export function createBackend(authUser) {
         member_department: department || '',
       })
       if (!direct.error && direct.data) {
+        void dispatchPendingEmails()
         return direct.data
       }
       if (direct.error && direct.error.code !== 'PGRST202') {
@@ -262,10 +373,11 @@ export function createBackend(authUser) {
           'Không thể kết nối chức năng tạo tài khoản. Hãy kiểm tra Edge Function và địa chỉ website.',
         )
       }
+      void dispatchPendingEmails()
       return response.data
     },
     async updateMember(team, userId, fields) {
-      return result(
+      const res = result(
         await client.rpc('work_update_member', {
           target_team: team.id,
           target_user: userId,
@@ -275,6 +387,8 @@ export function createBackend(authUser) {
           member_password: fields.password || null,
         }),
       )
+      void dispatchPendingEmails()
+      return res
     },
     async removeMember(team, userId) {
       result(
@@ -283,6 +397,7 @@ export function createBackend(authUser) {
           target_user: userId,
         }),
       )
+      void dispatchPendingEmails()
     },
     async signOut() {
       result(await client.auth.signOut())

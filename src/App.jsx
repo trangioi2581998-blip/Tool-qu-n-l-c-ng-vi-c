@@ -510,6 +510,7 @@ export default function App({
   const [inviting, setInviting] = useState(false)
   const [busyIds, setBusyIds] = useState(new Set())
   const [today, setToday] = useState(todayInVietnam)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [mailLink, setMailLink] = useState(() => {
     if (repo.mode !== 'live') return null
     const params = new URLSearchParams(location.search)
@@ -581,6 +582,16 @@ export default function App({
       active = false
     }
   }, [repo, loadKey, teamsReady, mailLink])
+  function refreshUnread() {
+    repo
+      .listNotifications?.()
+      .then((res) => {
+        if (typeof res?.unread_count === 'number') {
+          setUnreadCount(res.unread_count)
+        }
+      })
+      .catch(() => null)
+  }
   useEffect(() => {
     if (!teamsReady) return
     let active = true
@@ -589,7 +600,10 @@ export default function App({
     repo
       .load(teamId)
       .then((data) => {
-        if (active) setSnapshot({ team: teamId, ...data })
+        if (active) {
+          setSnapshot({ team: teamId, ...data })
+          refreshUnread()
+        }
       })
       .catch((error) => {
         if (active) setLoadError(readableError(error))
@@ -682,6 +696,7 @@ export default function App({
   }
   function notify(message, error = false) {
     setNotice({ message, error })
+    if (!error) refreshUnread()
   }
   function openNew(options = {}) {
     setModal({
@@ -779,7 +794,54 @@ export default function App({
     childTasks,
     files,
     updatedChildren = [],
+    recurringCycles = null,
   ) {
+    if (!previous && recurringCycles?.length > 0) {
+      let batches = []
+      try {
+        batches = await repo.createRecurringTasks(recurringCycles)
+      } catch (error) {
+        if (error.code === 'TASK_CONFLICT') refresh()
+        throw error
+      }
+      const createdAll = batches.flatMap((b) => [
+        b.task,
+        ...(b.children || []),
+      ])
+      patchSnapshot((current) => ({
+        ...current,
+        tasks: [...current.tasks, ...createdAll],
+      }))
+      const jobs = batches.flatMap((b) => [
+        ...files.main.map((attachment) => ({ task: b.task, attachment })),
+        ...(b.children || []).flatMap((childTask, index) =>
+          (files.children[index] ?? []).map((attachment) => ({
+            task: childTask,
+            attachment,
+          })),
+        ),
+      ])
+      const failed = jobs.length ? await uploadTaskAttachments(repo, jobs) : []
+      setModal(failed.length ? { type: 'attachment-retry', jobs: failed } : null)
+      if (!failed.length) {
+        notify(`Đã tạo ${batches.length} kỳ công việc định kỳ.`)
+      }
+      const firstSaved = batches[0]?.task
+      if (firstSaved) {
+        const visible =
+          view.kind === 'mine'
+            ? firstSaved.assignee_ids.includes(repo.user.id)
+            : view.kind === 'team'
+              ? firstSaved.team_id === teamId
+              : true
+        if (!visible) go(firstSaved.team_id ? 'team' : 'mine')
+        else {
+          setFilters(defaultFilters)
+          setQuery('')
+        }
+      }
+      return
+    }
     let saved
     let children = []
     const savedChildrenMap = new Map()
@@ -1160,14 +1222,20 @@ export default function App({
                 )}
               </div>
             )}
-            {repo.mode === 'demo' && (
-              <IconButton
-                label="Email mô phỏng"
-                onClick={() => onCreate('mail')}
-              >
-                <Bell size={17} />
-              </IconButton>
-            )}
+            <button
+              type="button"
+              className="icon-button bell-button"
+              aria-label="Thông báo & Email"
+              title="Thông báo & Cấu hình Email"
+              onClick={() => onCreate('mail')}
+            >
+              <Bell size={17} />
+              {unreadCount > 0 && (
+                <span className="bell-badge">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
             {repo.mode === 'demo' ? (
               <Dropdown
                 label="Đổi vai trò demo"
@@ -1504,8 +1572,14 @@ export default function App({
           onUpdated={memberUpdated}
         />
       )}
-      {modal?.type === 'mail' && repo.mode === 'demo' && (
-        <EmailDemoDialog repo={repo} onClose={() => setModal(null)} />
+      {modal?.type === 'mail' && (
+        <EmailDemoDialog
+          repo={repo}
+          tasks={tasks}
+          onOpenTask={(t) => setModal({ type: 'task', task: t })}
+          onReadAll={() => setUnreadCount(0)}
+          onClose={() => setModal(null)}
+        />
       )}
       {notice && (
         <div

@@ -940,6 +940,79 @@ export function createDemo(userId, onAccounts) {
         children: children.map(taskWithExtension),
       }
     },
+    async createRecurringTasks(cycles) {
+      const results = []
+      for (const cycle of cycles) {
+        const mainData = cycle.main
+        const childDrafts = cycle.children || []
+        if (childDrafts.length > 0) {
+          results.push(await this.createTaskWithChildren(mainData, childDrafts))
+        } else {
+          const saved = await this.saveTask(mainData, null)
+          results.push({ task: saved, children: [] })
+        }
+      }
+      return results
+    },
+    async listNotifications() {
+      const items = state.emails
+        .filter((item) => item.recipient === user.id)
+        .slice(-50)
+        .reverse()
+        .map((item) => ({
+          id: item.id,
+          subject: item.subject,
+          body: item.body,
+          task_id: item.task_id,
+          team_id: item.team_id,
+          created_at: item.created_at,
+          sent_at: item.created_at,
+          read_at: item.read_at || null,
+          recipient_email: user.email,
+        }))
+      return {
+        items,
+        unread_count: items.filter((i) => !i.read_at).length,
+        email_configured: true,
+        provider: 'smtp',
+        sender_email: 'demo@nhipviec.vn',
+      }
+    },
+    async markNotificationsRead() {
+      for (const item of state.emails) {
+        if (item.recipient === user.id && !item.read_at) {
+          item.read_at = new Date().toISOString()
+        }
+      }
+      save()
+    },
+    async getEmailSettings() {
+      return (
+        state.emailSettings || {
+          provider: 'smtp',
+          smtp_host: 'smtp.gmail.com',
+          smtp_port: 465,
+          smtp_user: '',
+          smtp_pass: '',
+          sender_name: 'Nhịp việc',
+          sender_email: '',
+          resend_api_key: '',
+          webhook_url: '',
+          enabled: true,
+        }
+      )
+    },
+    async saveEmailSettings(settings) {
+      state.emailSettings = { ...(state.emailSettings || {}), ...settings }
+      save()
+      return state.emailSettings
+    },
+    async sendTestEmail() {
+      return { delivered: true, detail: 'OK (Demo)' }
+    },
+    async dispatchPendingEmails() {
+      return { configured: true, sent: 0, failed: 0 }
+    },
     async listExtensions(task) {
       if (!canRead(task)) return []
       return state.extensions
