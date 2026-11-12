@@ -1,16 +1,28 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowUpRight,
+  Calendar as CalendarIcon,
   Check,
   CheckSquare2,
   ChevronDown,
+  ChevronUp,
   CircleDashed,
   Flag,
   Plus,
   X,
 } from 'lucide-react'
-import { initials, priorities, statuses } from './model.js'
+import {
+  capitalize,
+  dateKey,
+  fullDate,
+  initials,
+  longDay,
+  parseDay,
+  priorities,
+  statuses,
+  todayInVietnam,
+} from './model.js'
 
 export function Brand() {
   return (
@@ -195,6 +207,205 @@ export function Dropdown({ label, children, trigger, className = '' }) {
     </details>
   )
 }
+export function DatePicker({
+  value = '',
+  min = '',
+  disabled = false,
+  required = false,
+  onChange,
+  align = 'left',
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const today = todayInVietnam()
+  const baseDate = value ? parseDay(value) : parseDay(today)
+  const [viewYear, setViewYear] = useState(() => baseDate.getFullYear())
+  const [viewMonth, setViewMonth] = useState(() => baseDate.getMonth())
+
+  useEffect(() => {
+    if (value) {
+      const parsed = parseDay(value)
+      if (!Number.isNaN(parsed.getTime())) {
+        setViewYear(parsed.getFullYear())
+        setViewMonth(parsed.getMonth())
+      }
+    }
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+    const handlePointer = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false)
+    }
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointer)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointer)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open])
+
+  function shiftMonth(delta) {
+    const next = new Date(viewYear, viewMonth + delta, 1)
+    setViewYear(next.getFullYear())
+    setViewMonth(next.getMonth())
+  }
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1)
+  const startOffset = firstOfMonth.getDay() // Sunday = 0 .. Saturday = 6
+  const gridStart = new Date(viewYear, viewMonth, 1 - startOffset)
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const d = new Date(
+      gridStart.getFullYear(),
+      gridStart.getMonth(),
+      gridStart.getDate() + index,
+    )
+    const key = dateKey(d)
+    return {
+      key,
+      day: d.getDate(),
+      inMonth: d.getMonth() === viewMonth,
+      isToday: key === today,
+      isSelected: key === value,
+      isDisabled: Boolean(min && key < min),
+    }
+  })
+
+  const headerDate = value ? parseDay(value) : parseDay(today)
+  const headerLabel = capitalize(longDay.format(headerDate))
+  const monthNames = [
+    'Tháng 1',
+    'Tháng 2',
+    'Tháng 3',
+    'Tháng 4',
+    'Tháng 5',
+    'Tháng 6',
+    'Tháng 7',
+    'Tháng 8',
+    'Tháng 9',
+    'Tháng 10',
+    'Tháng 11',
+    'Tháng 12',
+  ]
+  const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+
+  return (
+    <div
+      ref={ref}
+      className={
+        'datepicker' +
+        (disabled ? ' is-disabled' : '') +
+        (align === 'right' ? ' align-right' : '')
+      }
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        className={'datepicker-trigger' + (open ? ' is-open' : '')}
+        aria-expanded={open}
+        onClick={() => {
+          if (!disabled) setOpen((prev) => !prev)
+        }}
+      >
+        <span className={value ? 'datepicker-value' : 'datepicker-placeholder'}>
+          {value ? fullDate(value) : 'dd/mm/yyyy'}
+        </span>
+        <CalendarIcon size={16} className="datepicker-icon" />
+      </button>
+      {required && (
+        <input
+          tabIndex={-1}
+          className="sr-only"
+          required={required}
+          value={value}
+          onChange={() => {}}
+          aria-hidden="true"
+        />
+      )}
+      {open && !disabled && (
+        <div
+          className="datepicker-popover"
+          role="dialog"
+          aria-label="Chọn ngày"
+        >
+          <div className="datepicker-top">
+            <strong>{headerLabel}</strong>
+            <button
+              type="button"
+              className="datepicker-today-btn"
+              disabled={Boolean(min && today < min)}
+              onClick={() => {
+                if (min && today < min) return
+                onChange?.(today)
+                setOpen(false)
+              }}
+            >
+              Hôm nay
+            </button>
+          </div>
+          <div className="datepicker-body">
+            <div className="datepicker-nav">
+              <span className="datepicker-month-title">
+                {monthNames[viewMonth]}, {viewYear}
+              </span>
+              <div className="datepicker-nav-btns">
+                <button
+                  type="button"
+                  className="datepicker-nav-btn"
+                  aria-label="Tháng trước"
+                  onClick={() => shiftMonth(-1)}
+                >
+                  <ChevronUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="datepicker-nav-btn"
+                  aria-label="Tháng sau"
+                  onClick={() => shiftMonth(1)}
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="datepicker-weekdays">
+              {weekdays.map((dayName) => (
+                <span key={dayName}>{dayName}</span>
+              ))}
+            </div>
+            <div className="datepicker-grid">
+              {cells.map((cell) => (
+                <button
+                  key={cell.key}
+                  type="button"
+                  disabled={cell.isDisabled}
+                  className={
+                    'datepicker-day' +
+                    (cell.inMonth ? '' : ' is-outside') +
+                    (cell.isToday ? ' is-today' : '') +
+                    (cell.isSelected ? ' is-selected' : '')
+                  }
+                  onClick={() => {
+                    onChange?.(cell.key)
+                    setOpen(false)
+                  }}
+                >
+                  {cell.day}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function HeroArt() {
   return (
     <div className="hero-art" aria-hidden="true">

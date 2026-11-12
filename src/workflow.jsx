@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CalendarClock, Check, Mail, UserRoundPlus } from 'lucide-react'
-import { Dialog, ErrorText, readableError } from './ui.jsx'
+import { DatePicker, Dialog, ErrorText, readableError } from './ui.jsx'
 import {
   fullDate,
   overdue,
@@ -128,16 +128,15 @@ export function DeadlineExtension({
       <ErrorText message={error} />
       {asking && !pending && (
         <div className="extension-form">
-          <label>
-            Ngày muốn điều chỉnh
-            <input
+          <div className="datepicker-field">
+            <span className="field-label">Ngày muốn điều chỉnh</span>
+            <DatePicker
               required
-              type="date"
               value={nextDue}
               min={today}
-              onChange={(event) => setNextDue(event.target.value)}
+              onChange={(val) => setNextDue(val)}
             />
-          </label>
+          </div>
           <label>
             Nội dung yêu cầu gia hạn
             <textarea

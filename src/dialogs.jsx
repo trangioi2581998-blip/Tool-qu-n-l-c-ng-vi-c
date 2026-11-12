@@ -13,7 +13,14 @@ import {
 } from 'lucide-react'
 import { DeadlineExtension } from './workflow.jsx'
 import { TaskAttachments } from './task-attachments.jsx'
-import { Avatar, Dialog, ErrorText, IconButton, readableError } from './ui.jsx'
+import {
+  Avatar,
+  DatePicker,
+  Dialog,
+  ErrorText,
+  IconButton,
+  readableError,
+} from './ui.jsx'
 import {
   normalize,
   priorities,
@@ -395,27 +402,26 @@ function TaskAttributes({
         </label>
       </div>
       <div className="form-grid">
-        <label>
-          Ngày giao
-          <input
-            type="date"
+        <div className="datepicker-field">
+          <span className="field-label">Ngày giao</span>
+          <DatePicker
             required={requireDates}
             disabled={!canOrganize || pending}
             value={values.assignedOn}
-            onChange={(event) => change?.('assignedOn', event.target.value)}
+            onChange={(val) => change?.('assignedOn', val)}
           />
-        </label>
-        <label>
-          Ngày hoàn thành (hạn)
-          <input
-            type="date"
+        </div>
+        <div className="datepicker-field">
+          <span className="field-label">Ngày hoàn thành (hạn)</span>
+          <DatePicker
             required={requireDates}
             disabled={!canOrganize || pending}
             value={values.due}
-            min={enforceDateOrder ? values.assignedOn : undefined}
-            onChange={(event) => change?.('due', event.target.value)}
+            min={enforceDateOrder ? values.assignedOn : ''}
+            align="right"
+            onChange={(val) => change?.('due', val)}
           />
-        </label>
+        </div>
       </div>
     </div>
   )
