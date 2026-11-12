@@ -1751,11 +1751,16 @@ h3 {
   margin-top: 12px;
 }
 .calendar-weekday {
-  padding: 8px 4px;
-  color: var(--muted);
-  font-size: 10px;
+  padding: 10px 6px;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
   text-align: center;
-  background: #f9f7fd;
+  background: #4e3596;
+  border-right: 1px solid #ffffff24;
+}
+.calendar-weekday:nth-child(7) {
+  border-right: 0;
 }
 .calendar-cell {
   border-top: 1px solid var(--line);
