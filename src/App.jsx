@@ -1321,18 +1321,11 @@ export default function App({
             </div>
           )}
           {canShowTasks && (
-            <>
-              <Summary
-                tasks={baseTasks}
-                today={today}
-                filters={metric}
-                onFilter={metricFilter}
-              />
-              <div
-                className={
-                  'dashboard-grid' + (layout === 'board' ? ' full' : '')
-                }
-              >
+            <div
+              className={
+                'dashboard-grid' + (layout === 'board' ? ' full' : '')
+              }
+            >
                 <section
                   className={
                     'panel tasks-panel' +
@@ -1429,7 +1422,6 @@ export default function App({
                   />
                 )}
               </div>
-            </>
           )}
           {view.kind === 'calendar' && canAdd && (
             <Calendar
