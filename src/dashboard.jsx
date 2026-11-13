@@ -441,12 +441,23 @@ function TaskListRow({
             <Priority priority={task.priority} />
           </div>
           <div className="row-due" role="cell">
-            <Deadline task={task} today={today} />
             {task.assigned_on && (
-              <span className="assigned-stamp">
-                Ngày giao: {fullDate(task.assigned_on).slice(0, 5)}
-                {task.assigned_time ? ' · ' + task.assigned_time : ''}
-              </span>
+              <div className="date-item assigned">
+                <span className="date-label">Giao:</span>
+                <span className="date-val">
+                  {fullDate(task.assigned_on).slice(0, 5)}
+                  {task.assigned_time ? ' ' + task.assigned_time : ''}
+                </span>
+              </div>
+            )}
+            {task.due_date && (
+              <div className={'date-item due' + (overdue(task, today) ? ' is-late' : '')}>
+                <span className="date-label">Hạn:</span>
+                <span className="date-val">
+                  {dueLabel(task.due_date, today)}
+                  {task.due_time ? ' ' + task.due_time : ''}
+                </span>
+              </div>
             )}
           </div>
           <div className="row-tools" role="cell">
@@ -672,12 +683,23 @@ export function Board({
                 </button>
                 <div className="board-dates">
                   {task.assigned_on && (
-                    <span className="assigned-stamp">
-                      Ngày giao: {fullDate(task.assigned_on).slice(0, 5)}
-                      {task.assigned_time ? ' · ' + task.assigned_time : ''}
-                    </span>
+                    <div className="date-item assigned">
+                      <span className="date-label">Giao:</span>
+                      <span className="date-val">
+                        {fullDate(task.assigned_on).slice(0, 5)}
+                        {task.assigned_time ? ' ' + task.assigned_time : ''}
+                      </span>
+                    </div>
                   )}
-                  <Deadline task={task} today={today} />
+                  {task.due_date && (
+                    <div className={'date-item due' + (overdue(task, today) ? ' is-late' : '')}>
+                      <span className="date-label">Hạn:</span>
+                      <span className="date-val">
+                        {dueLabel(task.due_date, today)}
+                        {task.due_time ? ' ' + task.due_time : ''}
+                      </span>
+                    </div>
+                  )}
                   {task.extension_pending && (
                     <span className="badge amber">Chờ duyệt gia hạn</span>
                   )}
