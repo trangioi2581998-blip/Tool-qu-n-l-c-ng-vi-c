@@ -1749,7 +1749,8 @@ export function DeleteTeamDialog({ team, onClose, onConfirm }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleDelete() {
+  async function handleDelete(event) {
+    event.preventDefault()
     if (busy) return
     setBusy(true)
     try {
@@ -1767,25 +1768,31 @@ export function DeleteTeamDialog({ team, onClose, onConfirm }) {
         if (!busy) onClose()
       }}
     >
-      <div className="delete-team-modal">
-        <p style={{ margin: '0 0 12px 0', fontSize: '14px', lineHeight: '1.5' }}>
+      <form className="dialog-form" onSubmit={handleDelete}>
+        <p style={{ margin: 0, fontSize: '13.5px', lineHeight: '1.6', color: '#332d46' }}>
           Bạn có chắc chắn muốn xóa nhóm <strong>"{team?.name}"</strong> không?
         </p>
-        <p
+        <div
           style={{
-            margin: '0 0 16px 0',
-            fontSize: '13px',
-            color: '#b3261e',
-            background: '#fdf2f2',
-            padding: '10px 12px',
-            borderRadius: '6px',
-            lineHeight: '1.5',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            background: '#fef2f2',
+            border: '1px solid #fee2e2',
+            borderRadius: '9px',
+            padding: '12px 14px',
+            fontSize: '12.5px',
+            lineHeight: '1.55',
+            color: '#991b1b',
           }}
         >
-          ⚠️ Toàn bộ công việc, dự án và danh sách thành viên thuộc nhóm này sẽ bị xóa vĩnh viễn và không thể khôi phục!
-        </p>
+          <Trash2 size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#dc2626' }} />
+          <div>
+            Toàn bộ công việc, dự án và danh sách thành viên thuộc nhóm này sẽ bị xóa vĩnh viễn và không thể khôi phục!
+          </div>
+        </div>
         <ErrorText message={error} />
-        <div className="form-actions">
+        <div className="form-actions" style={{ marginTop: '8px' }}>
           <button
             className="button secondary"
             type="button"
@@ -1796,14 +1803,13 @@ export function DeleteTeamDialog({ team, onClose, onConfirm }) {
           </button>
           <button
             className="button danger"
-            type="button"
+            type="submit"
             disabled={busy}
-            onClick={handleDelete}
           >
             <Trash2 size={16} /> {busy ? 'Đang xóa…' : 'Xác nhận xóa nhóm'}
           </button>
         </div>
-      </div>
+      </form>
     </Dialog>
   )
 }
@@ -1812,7 +1818,8 @@ export function TransferOwnerDialog({ team, member, onClose, onConfirm }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleTransfer() {
+  async function handleTransfer(event) {
+    event.preventDefault()
     if (busy) return
     setBusy(true)
     try {
@@ -1830,25 +1837,32 @@ export function TransferOwnerDialog({ team, member, onClose, onConfirm }) {
         if (!busy) onClose()
       }}
     >
-      <div className="transfer-owner-modal">
-        <p style={{ margin: '0 0 12px 0', fontSize: '14px', lineHeight: '1.5' }}>
-          Bạn có chắc chắn muốn chuyển quyền <strong>Trưởng nhóm</strong> của nhóm "<strong>{team?.name}</strong>" cho <strong>{member?.display_name}</strong>?
+      <form className="dialog-form" onSubmit={handleTransfer}>
+        <p style={{ margin: 0, fontSize: '13.5px', lineHeight: '1.6', color: '#332d46' }}>
+          Bạn có chắc chắn muốn chuyển quyền <strong>Trưởng nhóm</strong> của nhóm{' '}
+          <strong>"{team?.name}"</strong> cho <strong>{member?.display_name}</strong>?
         </p>
-        <p
+        <div
           style={{
-            margin: '0 0 16px 0',
-            fontSize: '13px',
-            color: '#5533c7',
-            background: '#f2edfd',
-            padding: '10px 12px',
-            borderRadius: '6px',
-            lineHeight: '1.5',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            background: '#f6f2fe',
+            border: '1px solid #e5daf9',
+            borderRadius: '9px',
+            padding: '12px 14px',
+            fontSize: '12.5px',
+            lineHeight: '1.55',
+            color: '#4c2889',
           }}
         >
-          👑 Sau khi chuyển giao quyền, <strong>{member?.display_name}</strong> sẽ trở thành Trưởng nhóm chính thức. Bạn sẽ tự động trở thành <strong>Phó nhóm</strong>.
-        </p>
+          <Crown size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#6846d3' }} />
+          <div>
+            Sau khi chuyển giao quyền, <strong>{member?.display_name}</strong> sẽ trở thành <strong>Trưởng nhóm</strong> chính thức. Bạn sẽ tự động trở thành <strong>Phó nhóm</strong>.
+          </div>
+        </div>
         <ErrorText message={error} />
-        <div className="form-actions">
+        <div className="form-actions" style={{ marginTop: '8px' }}>
           <button
             className="button secondary"
             type="button"
@@ -1859,14 +1873,13 @@ export function TransferOwnerDialog({ team, member, onClose, onConfirm }) {
           </button>
           <button
             className="button primary"
-            type="button"
+            type="submit"
             disabled={busy}
-            onClick={handleTransfer}
           >
             <Crown size={16} /> {busy ? 'Đang chuyển quyền…' : 'Xác nhận chuyển quyền'}
           </button>
         </div>
-      </div>
+      </form>
     </Dialog>
   )
 }
