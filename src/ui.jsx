@@ -205,6 +205,7 @@ export function Empty({ title, detail, onAdd, action = 'Tạo công việc' }) {
 }
 export function Dropdown({ label, children, trigger, className = '' }) {
   const ref = useRef(null)
+  const [isDropUp, setIsDropUp] = useState(false)
   useEffect(() => {
     const close = (event) => {
       if (!ref.current?.contains(event.target))
@@ -220,8 +221,27 @@ export function Dropdown({ label, children, trigger, className = '' }) {
       document.removeEventListener('keydown', escape)
     }
   }, [])
+
+  const handleToggle = () => {
+    if (ref.current?.open) {
+      const rect = ref.current.getBoundingClientRect()
+      const panel = ref.current.querySelector('.dropdown-panel')
+      const panelHeight = panel?.scrollHeight || 180
+      const spaceBelow = window.innerHeight - rect.bottom
+      if (spaceBelow < panelHeight + 20 && rect.top > panelHeight) {
+        setIsDropUp(true)
+      } else {
+        setIsDropUp(false)
+      }
+    }
+  }
+
   return (
-    <details ref={ref} className={'dropdown ' + className}>
+    <details
+      ref={ref}
+      onToggle={handleToggle}
+      className={'dropdown ' + className + (isDropUp ? ' drop-up' : '')}
+    >
       <summary aria-label={label}>
         {trigger}
         <ChevronDown className="dropdown-chevron" size={15} />

@@ -1958,7 +1958,7 @@ h3 {
 }
 .member-panel {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 .member-heading {
   display: flex;
@@ -1969,7 +1969,8 @@ h3 {
 }
 .member-table-wrap {
   overflow-x: auto;
-  padding: 0 18px 18px;
+  padding: 0 18px 24px;
+  min-height: 240px;
 }
 .member-table {
   width: 100%;
@@ -2083,6 +2084,14 @@ h3 {
   border-radius: 10px;
   padding: 6px;
   z-index: 20;
+}
+.dropdown.drop-up .dropdown-panel,
+.action-dropdown.drop-up .dropdown-panel,
+.member-table tbody tr:last-child .action-dropdown .dropdown-panel,
+.member-table tbody tr:nth-last-child(2):not(:first-child) .action-dropdown .dropdown-panel {
+  top: auto;
+  bottom: calc(100% + 4px);
+  box-shadow: 0 -10px 30px rgba(46, 28, 83, 0.16);
 }
 .action-dropdown .dropdown-panel > button {
   display: flex;
