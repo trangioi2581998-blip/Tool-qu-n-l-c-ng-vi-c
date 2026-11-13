@@ -4239,112 +4239,53 @@ h3 {
 /* Card tổng quan trên Mobile */
 .matrix-mobile-summary-card {
   background: linear-gradient(135deg, #6544d8 0%, #7e57c2 100%);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 14px 16px;
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(101, 68, 216, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.matrix-mobile-summary-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
 }
-.matrix-summary-pill {
-  font-size: 12.5px;
+.matrix-mobile-summary-card .m-card-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-.matrix-summary-diff-badge {
-  font-size: 11.5px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
 }
-.matrix-summary-diff-badge strong {
-  margin-left: 2px;
+.matrix-mobile-summary-card .m-field-line .m-label {
+  color: rgba(255, 255, 255, 0.88);
 }
-.matrix-summary-diff-badge.up strong {
+.matrix-mobile-summary-card .m-field-line .m-val {
+  color: #ffffff;
+  font-size: 16px;
+}
+.matrix-mobile-summary-card .m-field-line .m-val.up {
   color: #86efac;
 }
-.matrix-summary-diff-badge.down strong {
+.matrix-mobile-summary-card .m-field-line .m-val.down {
   color: #fca5a5;
-}
-.matrix-summary-stat-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.matrix-summary-caption {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  opacity: 0.85;
-}
-.matrix-summary-num-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.matrix-summary-number {
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1;
-}
-.matrix-summary-desc {
-  font-size: 13px;
-  opacity: 0.92;
-  font-weight: 500;
 }
 
 /* Thẻ trạng thái công việc (Status Card) */
 .matrix-status-card {
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e5def5;
+  border-radius: 12px;
+  border: 1px solid #e3dbf4;
   box-shadow: 0 2px 8px rgba(101, 68, 216, 0.04);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
-.matrix-status-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 12px 14px;
-  background: #faf8ff;
-  border-bottom: 1px solid #ede5f8;
-  gap: 10px;
-}
-.matrix-status-card-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.matrix-column-caption {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #7b7197;
-}
-.matrix-status-card-title {
+.matrix-card-header-simple {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 12px 16px;
+  background: #faf8fe;
+  border-bottom: 1px solid #ece4f8;
 }
 .status-dot-indicator {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
@@ -4356,168 +4297,129 @@ h3 {
 .dot-done { background: #10b981; }
 .dot-deleted { background: #94a3b8; }
 
-.matrix-status-card-title h3 {
+.matrix-card-header-simple .m-card-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 700;
   color: #24223a;
+  flex: 1;
 }
-.matrix-status-card-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: right;
-}
-.matrix-badge-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-.matrix-badge-caption {
-  font-size: 10px;
-  color: #8c83a8;
-  font-weight: 600;
-}
-.card-total-count {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #3b2a6b;
-  background: #ede8f7;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-.card-diff-tag {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 5px;
-}
-.card-diff-tag.up { background: #dcfce7; color: #15803d; }
-.card-diff-tag.down { background: #fee2e2; color: #b91c1c; }
-.card-diff-tag.zero { background: #f1f5f9; color: #64748b; }
-
-.matrix-status-card-body {
-  padding: 4px 14px 12px;
-  display: flex;
-  flex-direction: column;
-}
-.matrix-level-row {
-  padding: 12px 0;
-  border-bottom: 1px dashed #efe9f7;
-}
-.matrix-level-row:last-child {
-  border-bottom: none;
-  padding-bottom: 2px;
-}
-.matrix-level-header-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.matrix-level-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.matrix-field-caption {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6c638a;
-}
-.matrix-pace-tag {
+.m-card-count-badge {
   font-size: 12px;
   font-weight: 700;
+  color: #5534aa;
+  background: #ede6f8;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.matrix-status-card-body-simple {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.matrix-pace-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.matrix-pace-block.has-divider {
+  border-top: 1px solid #f2edf8;
+  padding-top: 14px;
+}
+
+.m-pace-heading {
+  margin-bottom: 4px;
+}
+.m-pace-tag {
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-block;
   padding: 3px 10px;
   border-radius: 6px;
 }
-.matrix-pace-tag.pace-on_time {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+.m-pace-tag.pace-on_time {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
-.matrix-pace-tag.pace-late {
+.m-pace-tag.pace-late {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
 }
-.matrix-pace-tag.pace-early {
+.m-pace-tag.pace-early {
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
 }
-.matrix-pace-tag.pace-all {
+.m-pace-tag.pace-all {
   background: #f8fafc;
   color: #475569;
   border: 1px solid #e2e8f0;
 }
 
-.matrix-level-stats-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.m-field-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 8px;
-  background: #f9f7fd;
-  border: 1px solid #efe8fa;
-  border-radius: 8px;
-  padding: 8px 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
 }
-.matrix-stat-col {
+.m-label {
+  color: #524c6e;
+  font-weight: 500;
+}
+.m-val {
+  color: #1a172e;
+  font-weight: 700;
+}
+.m-val.up { color: #16a34a; }
+.m-val.down { color: #dc2626; }
+.m-val.zero { color: #8c85a3; }
+
+.m-detail-section {
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 5px;
 }
-.matrix-stat-col .matrix-field-caption {
-  font-size: 10px;
-  color: #8379a2;
-}
-.matrix-level-count {
+.m-detail-label {
+  color: #3b3558;
+  font-weight: 600;
   font-size: 13px;
-  color: #24223a;
 }
-.matrix-level-count strong {
-  font-weight: 700;
-  color: #6544d8;
+.m-empty-text {
+  color: #9ca3af;
+  font-size: 14px;
+  padding-left: 2px;
 }
-.matrix-level-diff {
-  font-size: 12.5px;
-  font-weight: 700;
-}
-.matrix-level-diff.up { color: #16a34a; }
-.matrix-level-diff.down { color: #dc2626; }
-.matrix-level-diff.zero { color: #8c85a3; font-weight: 600; }
 
-.matrix-level-detail {
-  background: #faf8fe;
-  border: 1px solid #ede5f8;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 6px;
+.m-detail-section .matrix-detail-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
-.matrix-detail-header-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: #554486;
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
-}
-.matrix-detail-empty {
-  font-size: 12px;
-  color: #a8a29e;
-  font-style: italic;
-  display: inline-block;
+.m-detail-section .matrix-task-bullet-btn {
+  background: transparent;
+  border: 0;
   padding: 2px 0;
-}
-.matrix-level-detail .matrix-detail-list {
-  gap: 6px;
-}
-.matrix-level-detail .matrix-task-bullet-btn {
-  font-size: 12px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--purple-dark, #5232ba);
+  cursor: pointer;
   line-height: 1.45;
   word-break: break-word;
+}
+.m-detail-section .matrix-task-bullet-btn:hover {
+  text-decoration: underline;
+  color: var(--purple, #6544d8);
 }
 .email-center-body {
   display: grid;
