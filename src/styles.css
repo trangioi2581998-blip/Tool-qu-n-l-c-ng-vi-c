@@ -4528,11 +4528,11 @@ h3 {
   box-shadow: 0 2px 8px rgba(101, 68, 216, 0.05);
 }
 .report-matrix-table thead th {
-  background: var(--purple, #6544d8);
+  background: #4e3596;
   color: #ffffff;
   font-weight: 700;
   padding: 12px 14px;
-  border: 1px solid #5535c5;
+  border: 1px solid #3c2777;
   vertical-align: middle;
   letter-spacing: -0.01em;
 }
