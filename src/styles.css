@@ -2375,6 +2375,11 @@ h3 {
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  align-content: start;
+}
+.dialog-form input:not([type="checkbox"]):not([type="radio"]),
+.dialog-form select {
+  height: 38px;
 }
 .dialog-form > *,
 .dialog-form fieldset > *,
@@ -4324,7 +4329,6 @@ h3 {
   background: var(--purple-dark);
 }
 @media (max-width: 640px) {
-  .dialog,
   .dialog.dialog-wide {
     inset: 0;
     margin: 0;
@@ -4336,18 +4340,37 @@ h3 {
     border-radius: 0;
     box-sizing: border-box;
   }
-  .dialog[open] {
+  .dialog.dialog-wide[open] {
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
   }
+  .dialog:not(.dialog-wide) {
+    width: min(420px, calc(100vw - 32px)) !important;
+    max-height: calc(100dvh - 40px) !important;
+    height: auto !important;
+    margin: auto !important;
+    border: 1px solid #e0d8ef !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 50px rgba(33, 18, 70, 0.28) !important;
+    overflow: hidden !important;
+  }
+  .dialog:not(.dialog-wide)[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  .dialog:not(.dialog-wide) .dialog-form {
+    flex: 0 1 auto !important;
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+  }
   .dialog-header {
-    padding: 14px 14px 10px;
+    padding: 14px 16px 12px;
   }
   .dialog-form {
-    padding: 12px 14px 16px;
+    padding: 14px 16px 16px;
     width: 100%;
-    flex: 1;
+    align-content: start;
   }
   .dialog-footer {
     padding: 10px 14px;
