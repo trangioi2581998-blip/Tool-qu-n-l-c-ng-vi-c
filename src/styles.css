@@ -620,6 +620,18 @@ h3 {
 .button.text-danger:hover {
   background: #ffe5eb;
 }
+.button.text-blue {
+  color: #1971c2;
+}
+.button.text-blue:hover {
+  background: #e6f0fa;
+}
+.button.text-purple {
+  color: #6741d9;
+}
+.button.text-purple:hover {
+  background: #f3edff;
+}
 .icon-button {
   border: 0;
   border-radius: 7px;
@@ -1416,6 +1428,10 @@ h3 {
 .badge.purple {
   background: #eee8ff;
   color: #5735ba;
+}
+.badge.blue {
+  background: #e6f0fa;
+  color: #1971c2;
 }
 .badge.amber {
   background: #fff1d8;

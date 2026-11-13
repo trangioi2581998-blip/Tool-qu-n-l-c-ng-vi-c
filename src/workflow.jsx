@@ -292,6 +292,7 @@ export function AccountDialog({
   const [name, setName] = useState(member?.display_name || '')
   const [email, setEmail] = useState(member?.email || '')
   const [department, setDepartment] = useState(member?.department || '')
+  const [role, setRole] = useState(member?.role || 'member')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
@@ -319,12 +320,18 @@ export function AccountDialog({
     setError('')
     try {
       if (editing) {
+        if (member.role !== 'owner' && role !== member.role) {
+          await repo.setMemberRole(team.id, member.user_id, role)
+        }
         const updated = await repo.updateMember(team, member.user_id, {
           display_name: name.trim(),
           email: email.trim(),
           department: department.trim(),
           ...(password.trim() ? { password } : {}),
         })
+        if (role !== member.role) {
+          updated.role = role
+        }
         onUpdated(updated)
       } else {
         onCreated(
@@ -387,6 +394,18 @@ export function AccountDialog({
             onChange={(event) => setDepartment(event.target.value)}
           />
         </label>
+        {editing && member.role !== 'owner' && (
+          <label>
+            Vai trò trong nhóm
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+            >
+              <option value="member">Nhân viên</option>
+              <option value="deputy">Phó nhóm</option>
+            </select>
+          </label>
+        )}
         <label>
           <span id="member-password-label">
             {editing ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu'}

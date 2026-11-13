@@ -1630,3 +1630,88 @@ create policy work_teams_delete on public.work_teams
 notify pgrst, 'reload schema';
 commit;
 
+
+-- ==========================================
+-- Migration: 20261113223000_member_roles_and_transfer.sql
+-- ==========================================
+begin;
+
+alter table public.work_members drop constraint if exists work_members_role_check;
+alter table public.work_members add constraint work_members_role_check
+  check (role in ('owner', 'deputy', 'member'));
+
+create or replace function nhip_viec_private.is_member(target_team uuid, owner_only boolean default false)
+returns boolean language sql stable security definer set search_path = '' as \$\$
+  select exists (
+    select 1 from public.work_members
+    where team_id = target_team and user_id = (select auth.uid())
+      and (not owner_only or role in ('owner', 'deputy'))
+  );
+\$\$;
+
+create or replace function public.work_transfer_owner(target_team uuid, new_owner uuid)
+returns void language plpgsql security definer set search_path = '' as \$\$
+begin
+  if auth.uid() is null then
+    raise exception 'Bạn cần đăng nhập.';
+  end if;
+  if not exists (
+    select 1 from public.work_members
+    where team_id = target_team and user_id = auth.uid() and role = 'owner'
+  ) then
+    raise exception 'Chỉ trưởng nhóm mới có thể chuyển quyền trưởng nhóm.';
+  end if;
+  if not exists (
+    select 1 from public.work_members
+    where team_id = target_team and user_id = new_owner
+  ) then
+    raise exception 'Thành viên được chọn không thuộc nhóm này.';
+  end if;
+  if auth.uid() = new_owner then
+    return;
+  end if;
+
+  update public.work_members
+  set role = 'owner'
+  where team_id = target_team and user_id = new_owner;
+
+  update public.work_members
+  set role = 'deputy'
+  where team_id = target_team and user_id = auth.uid();
+end;
+\$\$;
+
+create or replace function public.work_set_member_role(target_team uuid, target_user uuid, new_role text)
+returns void language plpgsql security definer set search_path = '' as \$\$
+begin
+  if auth.uid() is null then
+    raise exception 'Bạn cần đăng nhập.';
+  end if;
+  if not exists (
+    select 1 from public.work_members
+    where team_id = target_team and user_id = auth.uid() and role = 'owner'
+  ) then
+    raise exception 'Chỉ trưởng nhóm mới có quyền thay đổi vai trò thành viên.';
+  end if;
+  if new_role not in ('deputy', 'member') then
+    raise exception 'Vai trò không hợp lệ.';
+  end if;
+  if target_user = auth.uid() then
+    raise exception 'Trưởng nhóm không thể tự đổi vai trò của mình tại đây.';
+  end if;
+
+  update public.work_members
+  set role = new_role
+  where team_id = target_team and user_id = target_user;
+end;
+\$\$;
+
+revoke all on function public.work_transfer_owner(uuid, uuid) from public, anon;
+grant execute on function public.work_transfer_owner(uuid, uuid) to authenticated;
+
+revoke all on function public.work_set_member_role(uuid, uuid, text) from public, anon;
+grant execute on function public.work_set_member_role(uuid, uuid, text) to authenticated;
+
+notify pgrst, 'reload schema';
+commit;
+

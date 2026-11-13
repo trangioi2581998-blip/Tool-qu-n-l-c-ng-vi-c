@@ -3,6 +3,7 @@ import {
   Check,
   ChevronDown,
   Copy,
+  Crown,
   LockKeyhole,
   MessageCircle,
   Plus,
@@ -1800,6 +1801,69 @@ export function DeleteTeamDialog({ team, onClose, onConfirm }) {
             onClick={handleDelete}
           >
             <Trash2 size={16} /> {busy ? 'Đang xóa…' : 'Xác nhận xóa nhóm'}
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  )
+}
+
+export function TransferOwnerDialog({ team, member, onClose, onConfirm }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleTransfer() {
+    if (busy) return
+    setBusy(true)
+    try {
+      await onConfirm(member)
+    } catch (err) {
+      setError(readableError(err))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog
+      title="Chuyển quyền Trưởng nhóm"
+      onClose={() => {
+        if (!busy) onClose()
+      }}
+    >
+      <div className="transfer-owner-modal">
+        <p style={{ margin: '0 0 12px 0', fontSize: '14px', lineHeight: '1.5' }}>
+          Bạn có chắc chắn muốn chuyển quyền <strong>Trưởng nhóm</strong> của nhóm "<strong>{team?.name}</strong>" cho <strong>{member?.display_name}</strong>?
+        </p>
+        <p
+          style={{
+            margin: '0 0 16px 0',
+            fontSize: '13px',
+            color: '#5533c7',
+            background: '#f2edfd',
+            padding: '10px 12px',
+            borderRadius: '6px',
+            lineHeight: '1.5',
+          }}
+        >
+          👑 Sau khi chuyển giao quyền, <strong>{member?.display_name}</strong> sẽ trở thành Trưởng nhóm chính thức. Bạn sẽ tự động trở thành <strong>Phó nhóm</strong>.
+        </p>
+        <ErrorText message={error} />
+        <div className="form-actions">
+          <button
+            className="button secondary"
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Hủy
+          </button>
+          <button
+            className="button primary"
+            type="button"
+            disabled={busy}
+            onClick={handleTransfer}
+          >
+            <Crown size={16} /> {busy ? 'Đang chuyển quyền…' : 'Xác nhận chuyển quyền'}
           </button>
         </div>
       </div>

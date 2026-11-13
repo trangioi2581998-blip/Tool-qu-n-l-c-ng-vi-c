@@ -1291,6 +1291,22 @@ export function createDemo(userId, onAccounts) {
       state.tasks = state.tasks.filter((t) => t.team_id !== teamId)
       save()
     },
+    async transferOwner(teamId, newOwnerId) {
+      const list = state.members[teamId] ?? []
+      const oldOwner = list.find((m) => m.role === 'owner')
+      const newOwner = list.find((m) => m.user_id === newOwnerId)
+      if (!newOwner) throw new Error('Thành viên không tồn tại trong nhóm.')
+      if (oldOwner) oldOwner.role = 'deputy'
+      newOwner.role = 'owner'
+      save()
+    },
+    async setMemberRole(teamId, userId, newRole) {
+      const list = state.members[teamId] ?? []
+      const target = list.find((m) => m.user_id === userId)
+      if (!target) throw new Error('Thành viên không tồn tại trong nhóm.')
+      target.role = newRole
+      save()
+    },
     async listComments(task) {
       return state.comments.filter((comment) => comment.task_id === task.id)
     },

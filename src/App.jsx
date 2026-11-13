@@ -7,6 +7,7 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
+  Crown,
   LayoutGrid,
   List,
   ListTodo,
@@ -17,8 +18,10 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ShieldCheck,
   SlidersHorizontal,
   Trash2,
+  UserMinus,
   UserRoundPlus,
   UsersRound,
   X,
@@ -36,6 +39,7 @@ import {
   InviteDialog,
   TaskDialog,
   TeamDialog,
+  TransferOwnerDialog,
 } from './dialogs.jsx'
 import { AccountDialog, EmailDemoDialog } from './workflow.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
@@ -261,9 +265,12 @@ function Sidebar({
                 {team
                   ? isOwner
                     ? 'Trưởng nhóm'
-                    : members.length
-                      ? 'Nhân viên'
-                      : 'Tài khoản cá nhân'
+                    : members.find((m) => m.user_id === repo.user.id)?.role ===
+                        'deputy'
+                      ? 'Phó nhóm'
+                      : members.length
+                        ? 'Nhân viên'
+                        : 'Tài khoản cá nhân'
                   : 'Tài khoản cá nhân'}
               </small>
             </span>
@@ -389,7 +396,10 @@ function MemberPanel({
   onDeleteMember,
   onEditTeam,
   onDeleteTeam,
+  onTransferOwner,
+  onSetRole,
   isOwner,
+  isDeputy,
   userId,
 }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
@@ -427,12 +437,6 @@ function MemberPanel({
             >
               <Trash2 size={14} /> Xóa nhóm
             </button>
-            <button className="button secondary" onClick={onInvite}>
-              Mời qua liên kết
-            </button>
-            <button className="button primary" onClick={onCreateAccount}>
-              <UserRoundPlus size={17} /> Thêm thành viên
-            </button>
           </div>
         )}
       </div>
@@ -443,7 +447,7 @@ function MemberPanel({
               <th>Họ và tên</th>
               <th>Email</th>
               <th>Phòng ban</th>
-              {isOwner && <th className="member-col-actions">Thao tác</th>}
+              {(isOwner || isDeputy) && <th className="member-col-actions">Thao tác</th>}
             </tr>
           </thead>
           <tbody>
@@ -460,10 +464,18 @@ function MemberPanel({
                       <span
                         className={
                           'badge ' +
-                          (member.role === 'owner' ? 'purple' : 'gray')
+                          (member.role === 'owner'
+                            ? 'purple'
+                            : member.role === 'deputy'
+                              ? 'blue'
+                              : 'gray')
                         }
                       >
-                        {member.role === 'owner' ? 'Trưởng nhóm' : 'Nhân viên'}
+                        {member.role === 'owner'
+                          ? 'Trưởng nhóm'
+                          : member.role === 'deputy'
+                            ? 'Phó nhóm'
+                            : 'Nhân viên'}
                       </span>
                     </div>
                   </div>
@@ -480,20 +492,20 @@ function MemberPanel({
                     <span className="muted">Chưa phân phòng ban</span>
                   )}
                 </td>
-                {isOwner && (
+                {(isOwner || isDeputy) && (
                   <td className="member-col-actions">
                     {confirmDeleteId === member.user_id ? (
                       <div className="member-row-tools">
                         <button
                           type="button"
-                          className="button secondary"
+                          className="button secondary member-btn-sm"
                           onClick={() => setConfirmDeleteId(null)}
                         >
                           Hủy
                         </button>
                         <button
                           type="button"
-                          className="button danger"
+                          className="button danger member-btn-sm"
                           onClick={() => {
                             setConfirmDeleteId(null)
                             onDeleteMember(member)
@@ -504,20 +516,53 @@ function MemberPanel({
                       </div>
                     ) : (
                       <div className="member-row-tools">
-                        <button
-                          type="button"
-                          className="button secondary member-btn-sm"
-                          onClick={() => onEditMember(member)}
-                        >
-                          <Pencil size={14} /> Sửa
-                        </button>
-                        {member.user_id !== userId && (
+                        {isOwner && member.user_id !== userId && (
+                          <>
+                            {member.role === 'deputy' ? (
+                              <button
+                                type="button"
+                                className="button secondary member-btn-sm"
+                                title="Gỡ quyền phó nhóm, chuyển về nhân viên"
+                                onClick={() => onSetRole?.(member, 'member')}
+                              >
+                                <UserMinus size={13} /> Gỡ phó nhóm
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="button secondary member-btn-sm text-blue"
+                                title="Bổ nhiệm thành viên này làm Phó nhóm"
+                                onClick={() => onSetRole?.(member, 'deputy')}
+                              >
+                                <ShieldCheck size={13} /> Thêm phó nhóm
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="button secondary member-btn-sm text-purple"
+                              title="Chuyển quyền Trưởng nhóm cho thành viên này"
+                              onClick={() => onTransferOwner?.(member)}
+                            >
+                              <Crown size={13} /> Chuyển trưởng nhóm
+                            </button>
+                          </>
+                        )}
+                        {(isOwner || member.user_id === userId) && (
+                          <button
+                            type="button"
+                            className="button secondary member-btn-sm"
+                            onClick={() => onEditMember(member)}
+                          >
+                            <Pencil size={13} /> Sửa
+                          </button>
+                        )}
+                        {isOwner && member.user_id !== userId && (
                           <button
                             type="button"
                             className="button text-danger member-btn-sm"
                             onClick={() => setConfirmDeleteId(member.user_id)}
                           >
-                            <Trash2 size={14} /> Xóa
+                            <Trash2 size={13} /> Xóa
                           </button>
                         )}
                       </div>
@@ -585,6 +630,10 @@ export default function App({
   const isOwner = members.some(
     (item) => item.user_id === repo.user.id && item.role === 'owner',
   )
+  const isDeputy = members.some(
+    (item) => item.user_id === repo.user.id && item.role === 'deputy',
+  )
+  const isManager = isOwner || isDeputy
   const taskMap = Object.fromEntries(tasks.map((task) => [task.id, task]))
   const childrenByTask = {}
   for (const task of tasks) {
@@ -1126,6 +1175,35 @@ export default function App({
     setMobileNav(false)
     setModal({ type: 'delete-team', team: targetTeam })
   }
+  async function transferOwner(newOwner) {
+    if (!team) return
+    await repo.transferOwner(team.id, newOwner.user_id)
+    patchSnapshot((current) => ({
+      ...current,
+      members: current.members.map((m) => {
+        if (m.user_id === newOwner.user_id) return { ...m, role: 'owner' }
+        if (m.role === 'owner') return { ...m, role: 'deputy' }
+        return m
+      }),
+    }))
+    notify(`Đã chuyển quyền Trưởng nhóm cho ${newOwner.display_name}.`)
+    setModal(null)
+  }
+  async function setMemberRole(targetMember, newRole) {
+    if (!team) return
+    await repo.setMemberRole(team.id, targetMember.user_id, newRole)
+    patchSnapshot((current) => ({
+      ...current,
+      members: current.members.map((m) =>
+        m.user_id === targetMember.user_id ? { ...m, role: newRole } : m,
+      ),
+    }))
+    const roleLabel = newRole === 'deputy' ? 'Phó nhóm' : 'Nhân viên'
+    notify(`Đã cập nhật vai trò của ${targetMember.display_name} thành ${roleLabel}.`)
+  }
+  const onTransferOwner = (targetMember) => {
+    setModal({ type: 'transfer-owner', member: targetMember })
+  }
   function clearInvite() {
     setPendingInvite('')
     const url = new URL(location.href)
@@ -1610,10 +1688,11 @@ export default function App({
                 team,
                 members,
                 isOwner,
-                onInvite,
-                onCreateAccount,
+                isDeputy,
                 onEditTeam,
                 onDeleteTeam,
+                onTransferOwner,
+                onSetRole: setMemberRole,
               }}
               onEditMember={onEditMember}
               onDeleteMember={deleteMember}
@@ -1666,6 +1745,14 @@ export default function App({
           team={modal.team}
           onClose={() => setModal(null)}
           onConfirm={deleteTeam}
+        />
+      )}
+      {modal?.type === 'transfer-owner' && (
+        <TransferOwnerDialog
+          team={team}
+          member={modal.member}
+          onClose={() => setModal(null)}
+          onConfirm={transferOwner}
         />
       )}
       {modal?.type === 'attachment-retry' && (

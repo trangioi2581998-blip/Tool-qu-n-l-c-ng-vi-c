@@ -315,6 +315,42 @@ export function createBackend(authUser) {
         if (error) throw err || error
       }
     },
+    async transferOwner(teamId, newOwnerId) {
+      try {
+        const res = await client.rpc('work_transfer_owner', {
+          target_team: teamId,
+          new_owner: newOwnerId,
+        })
+        if (res?.error) throw res.error
+      } catch (err) {
+        const { error: err1 } = await client
+          .from('work_members')
+          .update({ role: 'owner' })
+          .match({ team_id: teamId, user_id: newOwnerId })
+        if (err1) throw err || err1
+        const { error: err2 } = await client
+          .from('work_members')
+          .update({ role: 'deputy' })
+          .match({ team_id: teamId, user_id: client.auth.getUser()?.data?.user?.id })
+        if (err2) console.warn('Could not update former owner:', err2)
+      }
+    },
+    async setMemberRole(teamId, userId, newRole) {
+      try {
+        const res = await client.rpc('work_set_member_role', {
+          target_team: teamId,
+          target_user: userId,
+          new_role: newRole,
+        })
+        if (res?.error) throw res.error
+      } catch (err) {
+        const { error } = await client
+          .from('work_members')
+          .update({ role: newRole })
+          .match({ team_id: teamId, user_id: userId })
+        if (error) throw err || error
+      }
+    },
     async invite(team, email) {
       const token = result(
         await client.rpc('work_create_invite', {
