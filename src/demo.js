@@ -1327,5 +1327,47 @@ export function createDemo(userId, onAccounts) {
       save()
       return comment
     },
+    async listTeamMessages(teamId) {
+      if (!teamId) return []
+      if (!state.teamMessages) state.teamMessages = {}
+      if (!state.teamMessages[teamId] || state.teamMessages[teamId].length === 0) {
+        state.teamMessages[teamId] = [
+          {
+            id: 'msg-demo-1',
+            team_id: teamId,
+            sender_id: user.id,
+            sender_name: user.name,
+            body: 'Chào cả nhóm! Hôm nay chúng ta cùng rà soát các báo cáo tuần và tiến độ dự án nhé.',
+            created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
+          },
+          {
+            id: 'msg-demo-2',
+            team_id: teamId,
+            sender_id: '10000000-0000-4000-8000-000000000002',
+            sender_name: 'Trần Trung Long',
+            body: 'Dạ vâng anh, phần tài liệu và khảo sát khách hàng em đang hoàn tất để gửi duyệt ạ.',
+            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+          },
+        ]
+        save()
+      }
+      return state.teamMessages[teamId]
+    },
+    async sendTeamMessage(teamId, body) {
+      if (!teamId || !body) return null
+      if (!state.teamMessages) state.teamMessages = {}
+      if (!state.teamMessages[teamId]) state.teamMessages[teamId] = []
+      const msg = {
+        id: crypto.randomUUID(),
+        team_id: teamId,
+        sender_id: user.id,
+        sender_name: user.name,
+        body,
+        created_at: new Date().toISOString(),
+      }
+      state.teamMessages[teamId].push(msg)
+      save()
+      return msg
+    },
   }
 }

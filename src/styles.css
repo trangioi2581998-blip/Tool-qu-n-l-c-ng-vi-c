@@ -2248,6 +2248,276 @@ h3 {
   padding: 5px 10px;
   font-size: 11.5px;
 }
+
+/* ==========================================================================
+   Team Chat Panel
+   ========================================================================== */
+.team-chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: clamp(480px, calc(100dvh - 240px), 720px);
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+}
+.team-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #ebe5f5;
+  background: #faf8ff;
+  flex-shrink: 0;
+}
+.team-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.team-chat-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #eee8fc;
+  color: #5533c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.team-chat-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1735;
+  margin: 0;
+}
+.team-chat-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #706a86;
+  margin: 2px 0 0;
+}
+.team-chat-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+.team-chat-refresh-btn {
+  height: 32px;
+  padding: 0 10px !important;
+  font-size: 11.5px;
+  gap: 5px;
+}
+.team-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+.team-chat-loading,
+.team-chat-empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: #726c88;
+  gap: 8px;
+}
+.team-chat-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f4efff;
+  color: #6544d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.team-chat-empty h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #261f3e;
+  margin: 0;
+}
+.team-chat-empty p {
+  font-size: 12.5px;
+  color: #726c88;
+  max-width: 340px;
+  line-height: 1.5;
+  margin: 0;
+}
+.team-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+.team-msg-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-msg-date-divider {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+.team-msg-date-divider span {
+  background: #f1edfa;
+  font-size: 11px;
+  font-weight: 600;
+  color: #716692;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.team-msg-row {
+  display: flex;
+  gap: 9px;
+  align-items: flex-end;
+  max-width: 78%;
+}
+.team-msg-row.is-me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.team-msg-row.is-other {
+  align-self: flex-start;
+}
+.team-msg-avatar {
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+.team-msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.team-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 2px;
+}
+.team-msg-sender {
+  font-size: 12px;
+  font-weight: 600;
+  color: #27213c;
+}
+.team-chat-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.team-msg-bubble {
+  padding: 9px 13px;
+  word-break: break-word;
+  transition: transform 0.1s ease;
+}
+.team-msg-row.is-me .team-msg-bubble {
+  background: linear-gradient(135deg, #623fd8, #4c2eb6);
+  color: #ffffff;
+  border-radius: 14px 14px 3px 14px;
+  box-shadow: 0 2px 6px rgba(78, 53, 150, 0.2);
+}
+.team-msg-row.is-other .team-msg-bubble {
+  background: #f4effe;
+  color: #241d3b;
+  border-radius: 14px 14px 14px 3px;
+  border: 1px solid #e9e1f7;
+}
+.team-msg-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.team-msg-time {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+  opacity: 0.75;
+  text-align: right;
+}
+.team-chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-top: 1px solid #ece6f6;
+  background: #faf9fd;
+  flex-shrink: 0;
+}
+.team-chat-input {
+  flex: 1;
+  height: 38px !important;
+  min-height: 38px !important;
+  border: 1px solid #ded5f2 !important;
+  border-radius: 9px !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+  background: #ffffff !important;
+  color: #231c38 !important;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.team-chat-input:focus {
+  border-color: #6544d8 !important;
+  box-shadow: 0 0 0 3px rgba(101, 68, 216, 0.12) !important;
+}
+.team-chat-send-btn {
+  height: 38px;
+  padding: 0 14px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .team-chat-panel {
+    height: calc(100dvh - 200px);
+    border-radius: 10px;
+  }
+  .team-msg-row {
+    max-width: 90%;
+  }
+  .team-chat-header {
+    padding: 10px 14px;
+  }
+  .team-chat-body {
+    padding: 12px 14px;
+  }
+  .team-chat-input-bar {
+    padding: 9px 12px;
+  }
+  .team-chat-send-btn .btn-label-desktop {
+    display: none;
+  }
+  .team-chat-send-btn {
+    width: 38px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+}
 .load-state,
 .invite-banner {
   padding: 14px;

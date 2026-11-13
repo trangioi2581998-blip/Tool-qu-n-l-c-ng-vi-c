@@ -15,6 +15,7 @@ import {
   LockKeyhole,
   LogOut,
   Menu,
+  MessageSquare,
   Pencil,
   Plus,
   RefreshCw,
@@ -45,6 +46,7 @@ import {
 import { AccountDialog, EmailDemoDialog } from './workflow.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
 import { uploadTaskAttachments } from './attachments.js'
+import { TeamChatPanel } from './team-chat.jsx'
 import {
   byDeadline,
   capitalize,
@@ -109,6 +111,11 @@ const pages = {
     Icon: BarChart3,
     description:
       'So sánh biến động thêm, bớt công việc và chuyển đổi trạng thái theo tuần.',
+  },
+  chat: {
+    title: 'Chat nhóm',
+    Icon: MessageSquare,
+    description: 'Trao đổi, thảo luận trực tiếp giữa các thành viên trong nhóm.',
   },
   members: {
     title: 'Thành viên',
@@ -1470,7 +1477,7 @@ export default function App({
             <strong>{pageTitle}</strong>
           </div>
           <div className="top-actions">
-            {view.kind !== 'members' && (
+            {view.kind !== 'members' && view.kind !== 'chat' && (
               <div className="search-box">
                 <Search size={17} />
                 <input
@@ -1634,6 +1641,14 @@ export default function App({
                     <ArrowLeft size={17} /> Việc của tôi
                   </button>
                 )}
+                {view.kind === 'chat' && (
+                  <button
+                    className="button hero-secondary"
+                    onClick={() => go('team')}
+                  >
+                    <ArrowLeft size={17} /> Việc của nhóm
+                  </button>
+                )}
               </div>
             </div>
             <HeroArt />
@@ -1774,6 +1789,16 @@ export default function App({
               memberMap={memberMap}
               today={today}
               onOpen={openTask}
+            />
+          )}
+          {view.kind === 'chat' && canAdd && (
+            <TeamChatPanel
+              team={team}
+              members={members}
+              memberMap={memberMap}
+              userId={repo.user.id}
+              userName={repo.user.name}
+              repo={repo}
             />
           )}
           {view.kind === 'members' && canAdd && (

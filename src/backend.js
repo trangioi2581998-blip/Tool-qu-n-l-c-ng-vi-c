@@ -261,7 +261,9 @@ export function createBackend(authUser) {
     },
     async uploadAttachment(task, attachment) {
       const path = task.id + '/' + attachment.key
-      const { error } = await attachments.upload(path, attachment.file)
+      const { error } = await attachments.upload(path, attachment.file, {
+        upsert: true,
+      })
       if (error) {
         // A retry after a lost response reuses the original object key.
         const existing = await attachments.exists(path).catch(() => null)
@@ -386,6 +388,60 @@ export function createBackend(authUser) {
       )
       void dispatchPendingEmails()
       return res
+    },
+    async listTeamMessages(teamId) {
+      if (!teamId) return []
+      try {
+        const { data, error } = await client
+          .from('work_team_messages')
+          .select('id,team_id,sender_id,sender_name,body,created_at')
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: true })
+        if (!error && Array.isArray(data)) {
+          return data
+        }
+      } catch (err) {
+        console.warn('work_team_messages query fallback:', err)
+      }
+      try {
+        const raw = localStorage.getItem('nhip-viec.chat.' + teamId)
+        return raw ? JSON.parse(raw) : []
+      } catch {
+        return []
+      }
+    },
+    async sendTeamMessage(teamId, body) {
+      if (!teamId || !body) return null
+      const newMsg = {
+        id: crypto.randomUUID(),
+        team_id: teamId,
+        sender_id: user.id,
+        sender_name: user.name,
+        body,
+        created_at: new Date().toISOString(),
+      }
+      try {
+        const { data, error } = await client
+          .from('work_team_messages')
+          .insert({
+            team_id: teamId,
+            sender_id: user.id,
+            sender_name: user.name,
+            body,
+          })
+          .select('id,team_id,sender_id,sender_name,body,created_at')
+          .single()
+        if (!error && data) return data
+      } catch (err) {
+        console.warn('work_team_messages insert fallback:', err)
+      }
+      try {
+        const raw = localStorage.getItem('nhip-viec.chat.' + teamId)
+        const list = raw ? JSON.parse(raw) : []
+        list.push(newMsg)
+        localStorage.setItem('nhip-viec.chat.' + teamId, JSON.stringify(list))
+      } catch {}
+      return newMsg
     },
     listExtensions: (task) =>
       allRows(() =>
