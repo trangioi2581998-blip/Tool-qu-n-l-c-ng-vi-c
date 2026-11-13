@@ -1505,7 +1505,7 @@ export function ReportPanel({
           </table>
         </div>
 
-        {/* Giao diện Thẻ (Card) tối ưu riêng cho Mobile */}
+        {/* Giao diện Thẻ (Card) tối ưu riêng cho Mobile với đầy đủ nhãn header như bản web */}
         <div className="report-matrix-cards-wrap">
           {/* Card Tổng quan */}
           <div className="matrix-mobile-summary-card">
@@ -1521,7 +1521,7 @@ export function ReportPanel({
                       : 'zero')
                 }
               >
-                <span>So với {compareLabel.toLowerCase()}: </span>
+                <span>So sánh với {compareLabel}: </span>
                 <strong>
                   {targetMatrix.totalActive - compareMatrix.totalActive > 0
                     ? '+' + (targetMatrix.totalActive - compareMatrix.totalActive)
@@ -1530,8 +1530,15 @@ export function ReportPanel({
               </div>
             </div>
             <div className="matrix-mobile-summary-bottom">
-              <span className="matrix-summary-number">{targetMatrix.totalActive}</span>
-              <span className="matrix-summary-desc">công việc đang quản lý</span>
+              <div className="matrix-summary-stat-block">
+                <span className="matrix-summary-caption">
+                  Số lượng lũy kế đến {cutoffDateLabel}
+                </span>
+                <div className="matrix-summary-num-row">
+                  <span className="matrix-summary-number">{targetMatrix.totalActive}</span>
+                  <span className="matrix-summary-desc">công việc đang quản lý</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1550,20 +1557,29 @@ export function ReportPanel({
             return (
               <div key={'mcard-' + sec.key} className={'matrix-status-card card-' + sec.key}>
                 <div className="matrix-status-card-header">
-                  <div className="matrix-status-card-title">
-                    <span className={'status-dot-indicator dot-' + sec.key}></span>
-                    <h3>{sec.label}</h3>
+                  <div className="matrix-status-card-title-group">
+                    <span className="matrix-column-caption">Trạng thái công việc</span>
+                    <div className="matrix-status-card-title">
+                      <span className={'status-dot-indicator dot-' + sec.key}></span>
+                      <h3>{sec.label}</h3>
+                    </div>
                   </div>
                   <div className="matrix-status-card-badge">
-                    <span className="card-total-count">{secTotal} việc</span>
-                    <span
-                      className={
-                        'card-diff-tag ' +
-                        (secDiff > 0 ? 'up' : secDiff < 0 ? 'down' : 'zero')
-                      }
-                    >
-                      {secDiff > 0 ? '+' + secDiff : secDiff}
-                    </span>
+                    <div className="matrix-badge-col">
+                      <span className="matrix-badge-caption">Lũy kế {cutoffDateLabel}</span>
+                      <span className="card-total-count">{secTotal} việc</span>
+                    </div>
+                    <div className="matrix-badge-col">
+                      <span className="matrix-badge-caption">So với {compareLabel}</span>
+                      <span
+                        className={
+                          'card-diff-tag ' +
+                          (secDiff > 0 ? 'up' : secDiff < 0 ? 'down' : 'zero')
+                        }
+                      >
+                        {secDiff > 0 ? '+' + secDiff : secDiff}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -1587,30 +1603,49 @@ export function ReportPanel({
 
                     return (
                       <div key={'mlevel-' + sec.key + '-' + lev.key} className="matrix-level-row">
-                        <div className="matrix-level-meta">
-                          <span className={'matrix-pace-tag pace-' + (lev.key || 'all')}>
-                            {lev.label || 'Tất cả'}
-                          </span>
-                          <div className="matrix-level-stats">
-                            <span className="matrix-level-count">
-                              <strong>{curCount}</strong> việc
+                        <div className="matrix-level-header-group">
+                          <div className="matrix-level-field">
+                            <span className="matrix-field-caption">Mức độ hoàn thành</span>
+                            <span className={'matrix-pace-tag pace-' + (lev.key || 'all')}>
+                              {lev.label || 'Tất cả'}
                             </span>
-                            <span
-                              className={
-                                'matrix-level-diff ' +
-                                (diff > 0 ? 'up' : diff < 0 ? 'down' : 'zero')
-                              }
-                            >
-                              ({diff > 0 ? '+' + diff : diff})
-                            </span>
+                          </div>
+
+                          <div className="matrix-level-stats-row">
+                            <div className="matrix-stat-col">
+                              <span className="matrix-field-caption">
+                                Số lượng lũy kế đến {cutoffDateLabel}
+                              </span>
+                              <span className="matrix-level-count">
+                                <strong>{curCount}</strong> việc
+                              </span>
+                            </div>
+                            <div className="matrix-stat-col">
+                              <span className="matrix-field-caption">
+                                So sánh với {compareLabel}
+                              </span>
+                              <span
+                                className={
+                                  'matrix-level-diff ' +
+                                  (diff > 0 ? 'up' : diff < 0 ? 'down' : 'zero')
+                                }
+                              >
+                                {diff > 0 ? '+' + diff : diff}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {itemsToShow.length > 0 && (
-                          <div className="matrix-level-detail">
+                        <div className="matrix-level-detail">
+                          <span className="matrix-field-caption matrix-detail-header-label">
+                            Chi tiết Đầu mục công việc thay đổi trạng thái
+                          </span>
+                          {itemsToShow.length > 0 ? (
                             <MatrixDetailCell items={itemsToShow} onOpen={onOpen} />
-                          </div>
-                        )}
+                          ) : (
+                            <span className="matrix-detail-empty">—</span>
+                          )}
+                        </div>
                       </div>
                     )
                   })}

@@ -4279,7 +4279,19 @@ h3 {
 .matrix-summary-diff-badge.down strong {
   color: #fca5a5;
 }
-.matrix-mobile-summary-bottom {
+.matrix-summary-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.matrix-summary-caption {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+.matrix-summary-num-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -4307,10 +4319,23 @@ h3 {
 .matrix-status-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 11px 14px;
+  align-items: flex-start;
+  padding: 12px 14px;
   background: #faf8ff;
-  border-bottom: 1px solid #f0eafc;
+  border-bottom: 1px solid #ede5f8;
+  gap: 10px;
+}
+.matrix-status-card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.matrix-column-caption {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #7b7197;
 }
 .matrix-status-card-title {
   display: flex;
@@ -4318,10 +4343,11 @@ h3 {
   gap: 8px;
 }
 .status-dot-indicator {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 .dot-todo { background: #64748b; }
 .dot-doing { background: #6544d8; }
@@ -4332,14 +4358,26 @@ h3 {
 
 .matrix-status-card-title h3 {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: #24223a;
 }
 .matrix-status-card-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  text-align: right;
+}
+.matrix-badge-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.matrix-badge-caption {
+  font-size: 10px;
+  color: #8c83a8;
+  font-weight: 600;
 }
 .card-total-count {
   font-size: 12.5px;
@@ -4352,7 +4390,7 @@ h3 {
 .card-diff-tag {
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 5px;
 }
 .card-diff-tag.up { background: #dcfce7; color: #15803d; }
@@ -4360,29 +4398,41 @@ h3 {
 .card-diff-tag.zero { background: #f1f5f9; color: #64748b; }
 
 .matrix-status-card-body {
-  padding: 4px 14px 10px;
+  padding: 4px 14px 12px;
   display: flex;
   flex-direction: column;
 }
 .matrix-level-row {
-  padding: 9px 0;
+  padding: 12px 0;
   border-bottom: 1px dashed #efe9f7;
 }
 .matrix-level-row:last-child {
   border-bottom: none;
   padding-bottom: 2px;
 }
-.matrix-level-meta {
+.matrix-level-header-group {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.matrix-level-field {
+  display: flex;
   align-items: center;
-  margin-bottom: 6px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.matrix-field-caption {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c638a;
 }
 .matrix-pace-tag {
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
 }
 .matrix-pace-tag.pace-on_time {
   background: #f0fdf4;
@@ -4404,32 +4454,62 @@ h3 {
   color: #475569;
   border: 1px solid #e2e8f0;
 }
-.matrix-level-stats {
+
+.matrix-level-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f9f7fd;
+  border: 1px solid #efe8fa;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.matrix-stat-col {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-direction: column;
+  gap: 2px;
+}
+.matrix-stat-col .matrix-field-caption {
+  font-size: 10px;
+  color: #8379a2;
 }
 .matrix-level-count {
-  font-size: 12.5px;
+  font-size: 13px;
   color: #24223a;
 }
 .matrix-level-count strong {
   font-weight: 700;
+  color: #6544d8;
 }
 .matrix-level-diff {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .matrix-level-diff.up { color: #16a34a; }
 .matrix-level-diff.down { color: #dc2626; }
-.matrix-level-diff.zero { color: #8c85a3; }
+.matrix-level-diff.zero { color: #8c85a3; font-weight: 600; }
 
 .matrix-level-detail {
   background: #faf8fe;
-  border: 1px solid #f0e9f8;
+  border: 1px solid #ede5f8;
   border-radius: 8px;
   padding: 8px 10px;
-  margin-top: 4px;
+  margin-top: 6px;
+}
+.matrix-detail-header-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #554486;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.matrix-detail-empty {
+  font-size: 12px;
+  color: #a8a29e;
+  font-style: italic;
+  display: inline-block;
+  padding: 2px 0;
 }
 .matrix-level-detail .matrix-detail-list {
   gap: 6px;
