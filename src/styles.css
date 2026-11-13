@@ -279,6 +279,9 @@ h3 {
   margin-left: var(--sidebar);
 }
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   min-height: 67px;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
@@ -287,6 +290,7 @@ h3 {
   justify-content: space-between;
   gap: 15px;
   padding: 11px 34px;
+  box-shadow: 0 1px 4px rgba(41, 24, 96, 0.04);
 }
 .breadcrumb {
   display: flex;
