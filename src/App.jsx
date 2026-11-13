@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleHelp,
   Crown,
+  Ellipsis,
   LayoutGrid,
   List,
   ListTodo,
@@ -516,55 +517,73 @@ function MemberPanel({
                       </div>
                     ) : (
                       <div className="member-row-tools">
-                        {isOwner && member.user_id !== userId && (
-                          <>
-                            {member.role === 'deputy' ? (
-                              <button
-                                type="button"
-                                className="button secondary member-btn-sm"
-                                title="Gỡ quyền phó nhóm, chuyển về nhân viên"
-                                onClick={() => onSetRole?.(member, 'member')}
-                              >
-                                <UserMinus size={13} /> Gỡ phó nhóm
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="button secondary member-btn-sm text-blue"
-                                title="Bổ nhiệm thành viên này làm Phó nhóm"
-                                onClick={() => onSetRole?.(member, 'deputy')}
-                              >
-                                <ShieldCheck size={13} /> Thêm phó nhóm
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="button secondary member-btn-sm text-purple"
-                              title="Chuyển quyền Trưởng nhóm cho thành viên này"
-                              onClick={() => onTransferOwner?.(member)}
-                            >
-                              <Crown size={13} /> Chuyển trưởng nhóm
-                            </button>
-                          </>
-                        )}
-                        {(isOwner || member.user_id === userId) && (
-                          <button
-                            type="button"
-                            className="button secondary member-btn-sm"
-                            onClick={() => onEditMember(member)}
-                          >
-                            <Pencil size={13} /> Sửa
-                          </button>
-                        )}
-                        {isOwner && member.user_id !== userId && (
-                          <button
-                            type="button"
-                            className="button text-danger member-btn-sm"
-                            onClick={() => setConfirmDeleteId(member.user_id)}
-                          >
-                            <Trash2 size={13} /> Xóa
-                          </button>
-                        )}
+                        <Dropdown
+                          label={'Thao tác với ' + member.display_name}
+                          className="action-dropdown"
+                          trigger={<Ellipsis size={18} />}
+                        >
+                          {(close) => (
+                            <>
+                              {isOwner && member.user_id !== userId && (
+                                <>
+                                  {member.role === 'deputy' ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        close()
+                                        onSetRole?.(member, 'member')
+                                      }}
+                                    >
+                                      <UserMinus size={15} /> Gỡ quyền phó nhóm
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        close()
+                                        onSetRole?.(member, 'deputy')
+                                      }}
+                                    >
+                                      <ShieldCheck size={15} /> Bổ nhiệm phó nhóm
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      close()
+                                      onTransferOwner?.(member)
+                                    }}
+                                  >
+                                    <Crown size={15} /> Chuyển quyền trưởng nhóm
+                                  </button>
+                                </>
+                              )}
+                              {(isOwner || member.user_id === userId) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    close()
+                                    onEditMember(member)
+                                  }}
+                                >
+                                  <Pencil size={15} /> Sửa thông tin
+                                </button>
+                              )}
+                              {isOwner && member.user_id !== userId && (
+                                <button
+                                  type="button"
+                                  className="danger"
+                                  onClick={() => {
+                                    close()
+                                    setConfirmDeleteId(member.user_id)
+                                  }}
+                                >
+                                  <Trash2 size={15} /> Xóa thành viên
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </Dropdown>
                       </div>
                     )}
                   </td>
