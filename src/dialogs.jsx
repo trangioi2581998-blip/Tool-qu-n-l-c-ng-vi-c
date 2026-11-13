@@ -1690,16 +1690,17 @@ export function TaskDialog({
   )
 }
 
-export function TeamDialog({ onClose, onSave }) {
-  const [name, setName] = useState('')
+export function TeamDialog({ team, onClose, onSave }) {
+  const [name, setName] = useState(team?.name || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const isEditing = Boolean(team)
   async function save(event) {
     event.preventDefault()
     if (!name.trim() || busy) return
     setBusy(true)
     try {
-      await onSave(name.trim())
+      await onSave(name.trim(), team)
     } catch (error) {
       setError(readableError(error))
       setBusy(false)
@@ -1707,7 +1708,7 @@ export function TeamDialog({ onClose, onSave }) {
   }
   return (
     <Dialog
-      title="Tạo nhóm"
+      title={isEditing ? 'Sửa tên nhóm' : 'Tạo nhóm'}
       onClose={() => {
         if (!busy) onClose()
       }}
@@ -1735,10 +1736,73 @@ export function TeamDialog({ onClose, onSave }) {
             Hủy
           </button>
           <button className="button primary" disabled={busy || !name.trim()}>
-            <UsersRound size={16} /> {busy ? 'Đang lưu…' : 'Tạo nhóm'}
+            <UsersRound size={16} /> {busy ? 'Đang lưu…' : isEditing ? 'Lưu thay đổi' : 'Tạo nhóm'}
           </button>
         </div>
       </form>
+    </Dialog>
+  )
+}
+
+export function DeleteTeamDialog({ team, onClose, onConfirm }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleDelete() {
+    if (busy) return
+    setBusy(true)
+    try {
+      await onConfirm(team)
+    } catch (err) {
+      setError(readableError(err))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog
+      title="Xác nhận xóa nhóm"
+      onClose={() => {
+        if (!busy) onClose()
+      }}
+    >
+      <div className="delete-team-modal">
+        <p style={{ margin: '0 0 12px 0', fontSize: '14px', lineHeight: '1.5' }}>
+          Bạn có chắc chắn muốn xóa nhóm <strong>"{team?.name}"</strong> không?
+        </p>
+        <p
+          style={{
+            margin: '0 0 16px 0',
+            fontSize: '13px',
+            color: '#b3261e',
+            background: '#fdf2f2',
+            padding: '10px 12px',
+            borderRadius: '6px',
+            lineHeight: '1.5',
+          }}
+        >
+          ⚠️ Toàn bộ công việc, dự án và danh sách thành viên thuộc nhóm này sẽ bị xóa vĩnh viễn và không thể khôi phục!
+        </p>
+        <ErrorText message={error} />
+        <div className="form-actions">
+          <button
+            className="button secondary"
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Hủy
+          </button>
+          <button
+            className="button danger"
+            type="button"
+            disabled={busy}
+            onClick={handleDelete}
+          >
+            <Trash2 size={16} /> {busy ? 'Đang xóa…' : 'Xác nhận xóa nhóm'}
+          </button>
+        </div>
+      </div>
     </Dialog>
   )
 }

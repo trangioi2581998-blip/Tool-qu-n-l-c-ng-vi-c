@@ -284,6 +284,37 @@ export function createBackend(authUser) {
         await workspaceId('work_create_team', { team_name: name }),
       )
     },
+    async renameTeam(teamId, newName) {
+      const trimmed = newName.trim()
+      try {
+        const res = await client.rpc('work_rename_team', {
+          target_team: teamId,
+          new_name: trimmed,
+        })
+        if (res?.error) throw res.error
+      } catch (err) {
+        const { error } = await client
+          .from('work_teams')
+          .update({ name: trimmed })
+          .eq('id', teamId)
+        if (error) throw err || error
+      }
+      return { id: teamId, name: trimmed }
+    },
+    async deleteTeam(teamId) {
+      try {
+        const res = await client.rpc('work_delete_team', {
+          target_team: teamId,
+        })
+        if (res?.error) throw res.error
+      } catch (err) {
+        const { error } = await client
+          .from('work_teams')
+          .delete()
+          .eq('id', teamId)
+        if (error) throw err || error
+      }
+    },
     async invite(team, email) {
       const token = result(
         await client.rpc('work_create_invite', {

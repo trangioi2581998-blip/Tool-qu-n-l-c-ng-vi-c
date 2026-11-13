@@ -1278,6 +1278,19 @@ export function createDemo(userId, onAccounts) {
       save()
       return team
     },
+    async renameTeam(teamId, newName) {
+      const target = state.teams.find((t) => t.id === teamId)
+      if (!target) throw new Error('Nhóm không tồn tại.')
+      target.name = newName.trim()
+      save()
+      return target
+    },
+    async deleteTeam(teamId) {
+      state.teams = state.teams.filter((t) => t.id !== teamId)
+      delete state.members[teamId]
+      state.tasks = state.tasks.filter((t) => t.team_id !== teamId)
+      save()
+    },
     async listComments(task) {
       return state.comments.filter((comment) => comment.task_id === task.id)
     },

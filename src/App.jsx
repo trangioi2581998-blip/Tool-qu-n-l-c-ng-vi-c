@@ -31,7 +31,12 @@ import {
   Summary,
   TaskList,
 } from './dashboard.jsx'
-import { InviteDialog, TaskDialog, TeamDialog } from './dialogs.jsx'
+import {
+  DeleteTeamDialog,
+  InviteDialog,
+  TaskDialog,
+  TeamDialog,
+} from './dialogs.jsx'
 import { AccountDialog, EmailDemoDialog } from './workflow.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
 import { uploadTaskAttachments } from './attachments.js'
@@ -118,6 +123,8 @@ function Sidebar({
   onCreate,
   onInvite,
   isOwner,
+  onEditTeam,
+  onDeleteTeam,
   open,
   onClose,
   onSignOut,
@@ -156,28 +163,61 @@ function Sidebar({
           {(close) => (
             <>
               <button
+                type="button"
+                className="workspace-menu-item"
                 onClick={() => {
                   onSwitch(null)
                   close()
                 }}
               >
-                <LockKeyhole size={15} /> Cá nhân{' '}
+                <LockKeyhole size={15} /> <span>Cá nhân</span>{' '}
                 {!team && <Check size={15} className="menu-check" />}
               </button>
               {teams.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onSwitch(item.id)
-                    close()
-                  }}
-                >
-                  <UsersRound size={15} />
-                  <span>{item.name}</span>
-                  {team?.id === item.id && (
-                    <Check size={15} className="menu-check" />
-                  )}
-                </button>
+                <div key={item.id} className="workspace-menu-item-group">
+                  <button
+                    type="button"
+                    className="workspace-menu-select"
+                    onClick={() => {
+                      onSwitch(item.id)
+                      close()
+                    }}
+                  >
+                    <UsersRound size={15} />
+                    <span title={item.name}>{item.name}</span>
+                    {team?.id === item.id && (
+                      <Check size={15} className="menu-check" />
+                    )}
+                  </button>
+                  <div className="workspace-menu-item-actions">
+                    <button
+                      type="button"
+                      className="workspace-icon-action"
+                      title="Sửa tên nhóm"
+                      aria-label="Sửa tên nhóm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        close()
+                        onEditTeam?.(item)
+                      }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      className="workspace-icon-action danger"
+                      title="Xóa nhóm"
+                      aria-label="Xóa nhóm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        close()
+                        onDeleteTeam?.(item)
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
               ))}
               <button
                 className="menu-divider"
@@ -347,6 +387,8 @@ function MemberPanel({
   onCreateAccount,
   onEditMember,
   onDeleteMember,
+  onEditTeam,
+  onDeleteTeam,
   isOwner,
   userId,
 }) {
@@ -371,6 +413,20 @@ function MemberPanel({
         </div>
         {isOwner && (
           <div className="member-actions">
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => onEditTeam?.(team)}
+            >
+              <Pencil size={14} /> Sửa tên nhóm
+            </button>
+            <button
+              className="button secondary text-danger"
+              type="button"
+              onClick={() => onDeleteTeam?.(team)}
+            >
+              <Trash2 size={14} /> Xóa nhóm
+            </button>
             <button className="button secondary" onClick={onInvite}>
               Mời qua liên kết
             </button>
@@ -1037,12 +1093,38 @@ export default function App({
       setBusyIds(new Set(locks.current))
     }
   }
-  async function saveTeam(name) {
+  async function saveTeam(name, targetTeam) {
+    if (targetTeam) {
+      await repo.renameTeam(targetTeam.id, name)
+      setTeams((current) =>
+        current.map((t) => (t.id === targetTeam.id ? { ...t, name } : t)),
+      )
+      notify(`Đã đổi tên nhóm thành "${name}".`)
+      setModal(null)
+      return
+    }
     const newTeam = await repo.createTeam(name)
     setTeams((current) => [...current, newTeam])
     switchTeam(newTeam.id)
     notify('Đã tạo nhóm.')
     setModal(null)
+  }
+  async function deleteTeam(targetTeam) {
+    await repo.deleteTeam(targetTeam.id)
+    setTeams((current) => current.filter((t) => t.id !== targetTeam.id))
+    if (teamId === targetTeam.id) {
+      switchTeam(null)
+    }
+    notify(`Đã xóa nhóm "${targetTeam.name}".`)
+    setModal(null)
+  }
+  const onEditTeam = (targetTeam) => {
+    setMobileNav(false)
+    setModal({ type: 'team', team: targetTeam })
+  }
+  const onDeleteTeam = (targetTeam) => {
+    setMobileNav(false)
+    setModal({ type: 'delete-team', team: targetTeam })
   }
   function clearInvite() {
     setPendingInvite('')
@@ -1184,7 +1266,16 @@ export default function App({
   return (
     <div className="app-shell">
       <Sidebar
-        {...{ repo, teams, team, view, members, isOwner }}
+        {...{
+          repo,
+          teams,
+          team,
+          view,
+          members,
+          isOwner,
+          onEditTeam,
+          onDeleteTeam,
+        }}
         onNav={go}
         onSwitch={switchTeam}
         onCreate={onCreate}
@@ -1515,7 +1606,15 @@ export default function App({
           )}
           {view.kind === 'members' && canAdd && (
             <MemberPanel
-              {...{ team, members, isOwner, onInvite, onCreateAccount }}
+              {...{
+                team,
+                members,
+                isOwner,
+                onInvite,
+                onCreateAccount,
+                onEditTeam,
+                onDeleteTeam,
+              }}
               onEditMember={onEditMember}
               onDeleteMember={deleteMember}
               userId={repo.user.id}
@@ -1556,7 +1655,18 @@ export default function App({
         />
       )}
       {modal?.type === 'team' && (
-        <TeamDialog onClose={() => setModal(null)} onSave={saveTeam} />
+        <TeamDialog
+          team={modal.team}
+          onClose={() => setModal(null)}
+          onSave={saveTeam}
+        />
+      )}
+      {modal?.type === 'delete-team' && (
+        <DeleteTeamDialog
+          team={modal.team}
+          onClose={() => setModal(null)}
+          onConfirm={deleteTeam}
+        />
       )}
       {modal?.type === 'attachment-retry' && (
         <AttachmentRetryDialog

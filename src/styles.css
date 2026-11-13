@@ -800,6 +800,71 @@ h3 {
   margin-left: auto;
   color: #6846d3;
 }
+.workspace-menu-item-group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 6px;
+  position: relative;
+  transition: background 0.15s ease;
+}
+.workspace-menu-item-group:hover {
+  background: #f2edfd;
+}
+.workspace-menu-select {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 33px;
+  gap: 7px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px 0 0 6px;
+  padding: 6px;
+  font-size: 11.5px;
+  cursor: pointer;
+  color: inherit;
+}
+.workspace-menu-select:hover {
+  color: var(--purple-dark);
+}
+.workspace-menu-select span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.workspace-menu-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-right: 5px;
+}
+.workspace-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #8b859e;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+.workspace-icon-action:hover {
+  background: #dfd5fa;
+  color: #5533c7;
+}
+.workspace-icon-action.danger:hover {
+  background: #fde8e8;
+  color: #c92a2a;
+}
 .dropdown-panel > .menu-divider {
   border-top: 1px solid var(--line);
   border-radius: 0 0 6px 6px;
