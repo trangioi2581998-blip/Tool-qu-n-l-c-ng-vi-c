@@ -16,8 +16,8 @@ export function taskCompletionError(status, parent, children = []) {
 }
 
 export const statuses = {
-  todo: { label: 'Cần làm', color: 'gray' },
-  doing: { label: 'Đang làm', color: 'purple' },
+  todo: { label: 'Chưa thực hiện', color: 'gray' },
+  doing: { label: 'Đang thực hiện', color: 'purple' },
   review: { label: 'Chờ duyệt', color: 'amber' },
   done: { label: 'Hoàn thành', color: 'green' },
 }
