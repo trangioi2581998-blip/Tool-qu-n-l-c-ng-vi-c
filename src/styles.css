@@ -4102,43 +4102,56 @@ h3 {
   color: var(--muted);
 }
 
-/* Bảng báo cáo tiến độ theo ma trận chuẩn */
+/* Bảng báo cáo tiến độ theo ma trận chuẩn đồng bộ theme tím Nhịp việc */
 .report-matrix-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   background: #ffffff;
-  border: 1px solid #bce1f1;
+  border: 1px solid #dfd7f3;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(101, 68, 216, 0.05);
 }
 .report-matrix-table thead th {
-  background: #d4edf9;
-  color: #12344d;
+  background: linear-gradient(180deg, #f5f0ff 0%, #ede6fc 100%);
+  color: var(--purple-dark, #5232ba);
   font-weight: 700;
-  padding: 10px 12px;
-  border: 1px solid #7eaec4;
+  padding: 11px 14px;
+  border: 1px solid #dcd3f3;
   vertical-align: middle;
+  letter-spacing: -0.01em;
 }
 .report-matrix-table tbody td {
-  padding: 8px 12px;
-  border: 1px solid #8fbed4;
+  padding: 9px 12px;
+  border: 1px solid #ece6f8;
   vertical-align: middle;
-  color: #1f2937;
+  color: var(--ink, #24223a);
+}
+.report-matrix-table tbody tr:hover td {
+  background-color: #fdfcff;
 }
 .matrix-status-cell {
-  background: #fbfdff;
+  background: #faf8ff;
   font-weight: 700;
-  color: #1f2937;
+  color: #3b2a6b;
+  border-right: 1px solid #dfd7f3 !important;
 }
 .matrix-pace-cell {
   background: #ffffff;
+  color: #4c4765;
+  font-weight: 500;
 }
 .matrix-count-cell {
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
+  color: #24223a;
+  font-size: 13.5px;
 }
 .matrix-diff-cell {
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
 }
 .matrix-diff-cell.up {
   color: #059669;
@@ -4147,10 +4160,11 @@ h3 {
   color: #dc2626;
 }
 .matrix-diff-cell.zero {
-  color: #6b7280;
+  color: #8c85a3;
+  font-weight: 500;
 }
 .matrix-detail-cell {
-  padding: 6px 10px;
+  padding: 7px 12px;
 }
 .matrix-detail-list {
   margin: 0;
@@ -4158,26 +4172,29 @@ h3 {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 .matrix-task-bullet-btn {
   background: transparent;
   border: 0;
-  padding: 0;
+  padding: 2px 0;
   text-align: left;
   font-size: 12.5px;
-  color: #1e3a8a;
+  color: var(--purple-dark, #5232ba);
   cursor: pointer;
   line-height: 1.45;
+  transition: color 0.15s ease;
 }
 .matrix-task-bullet-btn:hover {
   text-decoration: underline;
-  color: #1d4ed8;
+  color: var(--purple, #6544d8);
 }
 .matrix-total-row td {
-  background: #e8f4fc;
+  background: linear-gradient(180deg, #f4eeff 0%, #ede4fc 100%);
   font-weight: 700;
-  border-top: 2px solid #5a94b3;
+  color: #361f7a;
+  border-top: 2px solid #bda8f2;
+  font-size: 13.5px;
 }
 .email-center-body {
   display: grid;

@@ -1430,10 +1430,17 @@ export function ReportPanel({
                         {itemsToShow.length > 0 ? (
                           <ul className="matrix-detail-list">
                             {itemsToShow.map((t) => {
+                              const toLabel =
+                                t.toStatus === 'deleted'
+                                  ? 'Đã xóa'
+                                  : statuses[t.toStatus]?.label || t.toStatus
+                              const fromLabel =
+                                statuses[t.fromStatus]?.label || t.fromStatus
+
                               const transText =
                                 t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus
-                                  ? ` "${t.title}" ${statuses[t.fromStatus]?.label || t.fromStatus} => ${statuses[t.toStatus]?.label || t.toStatus}`
-                                  : ` ${t.title}`
+                                  ? ` "${t.title}" ${fromLabel} => ${toLabel}`
+                                  : ` "${t.title}"`
                               return (
                                 <li key={t.id}>
                                   <button
