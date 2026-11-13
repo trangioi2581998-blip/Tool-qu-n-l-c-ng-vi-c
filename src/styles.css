@@ -1977,6 +1977,9 @@ h3 {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 12.5px;
+  border: 1px solid #dcd4f0;
+  border-radius: 9px;
+  overflow: hidden;
 }
 .member-table thead th {
   text-align: left;
@@ -1987,19 +1990,18 @@ h3 {
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  border: 0;
+  border-bottom: 1px solid #3c2777;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
 }
 .member-table thead th:first-child {
-  border-radius: 9px 0 0 9px;
+  border-top-left-radius: 8px;
 }
 .member-table thead th:last-child {
-  border-radius: 0 9px 9px 0;
+  border-top-right-radius: 8px;
+  border-right: 0;
 }
 .member-table tbody tr {
-  border-bottom: 1px solid #f0edf5;
-}
-.member-table tbody tr:last-child td {
-  border-bottom: 0;
+  border-bottom: 1px solid #ede8f7;
 }
 .member-table tbody tr:hover {
   background: #f8f5ff;
@@ -2007,7 +2009,129 @@ h3 {
 .member-table td {
   padding: 12px 18px;
   vertical-align: middle;
-  border-bottom: 1px solid #f0edf5;
+  border-bottom: 1px solid #ede8f7;
+  border-right: 1px solid #f0edf5;
+}
+.member-table td:last-child {
+  border-right: 0;
+}
+.member-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.member-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+.member-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
+.member-cards-mobile {
+  display: none;
+}
+@media (max-width: 680px) {
+  .member-table-wrap {
+    display: none !important;
+  }
+  .member-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 14px 18px;
+  }
+  .member-card-item {
+    background: #ffffff;
+    border: 1px solid #e2dbf0;
+    border-radius: 12px;
+    padding: 13px 14px;
+    box-shadow: 0 2px 6px rgba(44, 28, 82, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .member-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .member-card-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+  .member-card-name-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .member-card-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e1633;
+    flex-wrap: wrap;
+  }
+  .member-card-name small.member-you-tag {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .member-card-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .member-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 9px;
+    border-top: 1px solid #f3effa;
+    font-size: 12px;
+  }
+  .member-card-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .member-meta-label {
+    color: #716b84;
+    font-size: 11.5px;
+    min-width: 68px;
+    flex-shrink: 0;
+  }
+  .member-meta-value {
+    color: #312948;
+    word-break: break-all;
+  }
+
+  /* Nút sửa tên và xóa nhóm thành icon trên mobile */
+  .member-heading {
+    padding: 12px 14px 10px;
+  }
+  .member-heading .member-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+  .member-header-action {
+    width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+  }
+  .member-header-action .btn-label-desktop {
+    display: none !important;
+  }
 }
 .member-name-cell {
   display: flex;

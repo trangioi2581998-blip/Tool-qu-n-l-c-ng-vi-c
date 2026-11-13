@@ -404,6 +404,105 @@ function MemberPanel({
   userId,
 }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+
+  const renderActions = (member) => {
+    if (!isOwner && !isDeputy) return null
+    if (confirmDeleteId === member.user_id) {
+      return (
+        <div className="member-row-tools">
+          <button
+            type="button"
+            className="button secondary member-btn-sm"
+            onClick={() => setConfirmDeleteId(null)}
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            className="button danger member-btn-sm"
+            onClick={() => {
+              setConfirmDeleteId(null)
+              onDeleteMember(member)
+            }}
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      )
+    }
+    return (
+      <div className="member-row-tools">
+        <Dropdown
+          label={'Thao tác với ' + member.display_name}
+          className="action-dropdown"
+          trigger={<Ellipsis size={18} />}
+        >
+          {(close) => (
+            <>
+              {isOwner && member.user_id !== userId && (
+                <>
+                  {member.role === 'deputy' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close()
+                        onSetRole?.(member, 'member')
+                      }}
+                    >
+                      <UserMinus size={15} /> Gỡ quyền phó nhóm
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close()
+                        onSetRole?.(member, 'deputy')
+                      }}
+                    >
+                      <ShieldCheck size={15} /> Bổ nhiệm phó nhóm
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close()
+                      onTransferOwner?.(member)
+                    }}
+                  >
+                    <Crown size={15} /> Chuyển quyền trưởng nhóm
+                  </button>
+                </>
+              )}
+              {(isOwner || member.user_id === userId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    close()
+                    onEditMember(member)
+                  }}
+                >
+                  <Pencil size={15} /> Sửa thông tin
+                </button>
+              )}
+              {isOwner && member.user_id !== userId && (
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => {
+                    close()
+                    setConfirmDeleteId(member.user_id)
+                  }}
+                >
+                  <Trash2 size={15} /> Xóa thành viên
+                </button>
+              )}
+            </>
+          )}
+        </Dropdown>
+      </div>
+    )
+  }
+
   if (!team)
     return (
       <div className="panel">
@@ -425,22 +524,28 @@ function MemberPanel({
         {isOwner && (
           <div className="member-actions">
             <button
-              className="button secondary"
+              className="button secondary member-header-action"
               type="button"
+              title="Sửa tên nhóm"
+              aria-label="Sửa tên nhóm"
               onClick={() => onEditTeam?.(team)}
             >
-              <Pencil size={14} /> Sửa tên nhóm
+              <Pencil size={15} /> <span className="btn-label-desktop">Sửa tên nhóm</span>
             </button>
             <button
-              className="button secondary text-danger"
+              className="button secondary text-danger member-header-action"
               type="button"
+              title="Xóa nhóm"
+              aria-label="Xóa nhóm"
               onClick={() => onDeleteTeam?.(team)}
             >
-              <Trash2 size={14} /> Xóa nhóm
+              <Trash2 size={15} /> <span className="btn-label-desktop">Xóa nhóm</span>
             </button>
           </div>
         )}
       </div>
+
+      {/* Desktop Table View */}
       <div className="member-table-wrap">
         <table className="member-table" aria-label="Bảng thành viên">
           <thead>
@@ -495,103 +600,73 @@ function MemberPanel({
                 </td>
                 {(isOwner || isDeputy) && (
                   <td className="member-col-actions">
-                    {confirmDeleteId === member.user_id ? (
-                      <div className="member-row-tools">
-                        <button
-                          type="button"
-                          className="button secondary member-btn-sm"
-                          onClick={() => setConfirmDeleteId(null)}
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          type="button"
-                          className="button danger member-btn-sm"
-                          onClick={() => {
-                            setConfirmDeleteId(null)
-                            onDeleteMember(member)
-                          }}
-                        >
-                          Xác nhận xóa
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="member-row-tools">
-                        <Dropdown
-                          label={'Thao tác với ' + member.display_name}
-                          className="action-dropdown"
-                          trigger={<Ellipsis size={18} />}
-                        >
-                          {(close) => (
-                            <>
-                              {isOwner && member.user_id !== userId && (
-                                <>
-                                  {member.role === 'deputy' ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        close()
-                                        onSetRole?.(member, 'member')
-                                      }}
-                                    >
-                                      <UserMinus size={15} /> Gỡ quyền phó nhóm
-                                    </button>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        close()
-                                        onSetRole?.(member, 'deputy')
-                                      }}
-                                    >
-                                      <ShieldCheck size={15} /> Bổ nhiệm phó nhóm
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      close()
-                                      onTransferOwner?.(member)
-                                    }}
-                                  >
-                                    <Crown size={15} /> Chuyển quyền trưởng nhóm
-                                  </button>
-                                </>
-                              )}
-                              {(isOwner || member.user_id === userId) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    close()
-                                    onEditMember(member)
-                                  }}
-                                >
-                                  <Pencil size={15} /> Sửa thông tin
-                                </button>
-                              )}
-                              {isOwner && member.user_id !== userId && (
-                                <button
-                                  type="button"
-                                  className="danger"
-                                  onClick={() => {
-                                    close()
-                                    setConfirmDeleteId(member.user_id)
-                                  }}
-                                >
-                                  <Trash2 size={15} /> Xóa thành viên
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </Dropdown>
-                      </div>
-                    )}
+                    {renderActions(member)}
                   </td>
                 )}
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="member-cards-mobile" role="list" aria-label="Danh sách thành viên">
+        {members.map((member) => (
+          <div key={member.user_id} className="member-card-item" role="listitem">
+            <div className="member-card-header">
+              <div className="member-card-user">
+                <Avatar name={member.display_name} id={member.user_id} />
+                <div className="member-card-name-group">
+                  <div className="member-card-name">
+                    <strong>{member.display_name}</strong>
+                    {member.user_id === userId && (
+                      <small className="member-you-tag">(Bạn)</small>
+                    )}
+                  </div>
+                  <span
+                    className={
+                      'badge ' +
+                      (member.role === 'owner'
+                        ? 'purple'
+                        : member.role === 'deputy'
+                          ? 'blue'
+                          : 'gray')
+                    }
+                  >
+                    {member.role === 'owner'
+                      ? 'Trưởng nhóm'
+                      : member.role === 'deputy'
+                        ? 'Phó nhóm'
+                        : 'Nhân viên'}
+                  </span>
+                </div>
+              </div>
+              {(isOwner || isDeputy) && (
+                <div className="member-card-actions">
+                  {renderActions(member)}
+                </div>
+              )}
+            </div>
+            <div className="member-card-meta">
+              <div className="member-card-meta-row">
+                <span className="member-meta-label">Email:</span>
+                <span className="member-meta-value">
+                  {member.email || <span className="muted">Chưa cập nhật</span>}
+                </span>
+              </div>
+              <div className="member-card-meta-row">
+                <span className="member-meta-label">Phòng ban:</span>
+                <span className="member-meta-value">
+                  {member.department ? (
+                    <span className="member-dept-badge">{member.department}</span>
+                  ) : (
+                    <span className="muted">Chưa phân phòng ban</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )
