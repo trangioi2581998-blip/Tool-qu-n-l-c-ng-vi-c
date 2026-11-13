@@ -493,6 +493,9 @@ function TaskListRow({
             busy={busy}
             onStatus={onStatus}
           />
+          <div className="row-pace" role="cell">
+            <TaskPaceBadge task={task} today={today} />
+          </div>
           <div className="row-priority" role="cell">
             <Priority priority={task.priority} />
           </div>
@@ -515,9 +518,6 @@ function TaskListRow({
                 </span>
               </div>
             )}
-            <div className="row-due-pace">
-              <TaskPaceBadge task={task} today={today} />
-            </div>
           </div>
           <div className="row-tools" role="cell">
             <IconButton label={'Mở ' + task.title} onClick={() => onOpen(task)}>
@@ -583,6 +583,7 @@ export function TaskList({
         <span role="columnheader">Người giao</span>
         <span role="columnheader">Người được giao</span>
         <span role="columnheader">Trạng thái</span>
+        <span role="columnheader">Tiến độ</span>
         <span role="columnheader">Ưu tiên</span>
         <span role="columnheader">Hạn</span>
         <span role="columnheader" className="sr-only">

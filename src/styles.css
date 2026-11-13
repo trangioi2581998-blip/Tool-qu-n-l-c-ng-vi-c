@@ -934,12 +934,13 @@ h3 {
 .task-grid {
   display: grid;
   grid-template-columns:
-    minmax(0, 2.1fr)
+    minmax(0, 2fr)
     minmax(0, 0.95fr)
-    minmax(0, 1.45fr)
-    118px
+    minmax(0, 1.35fr)
+    116px
+    110px
     60px
-    88px
+    128px
     32px;
   align-items: center;
   gap: 10px;
@@ -1423,10 +1424,14 @@ h3 {
     grid-template-columns: max-content minmax(0, 1fr) max-content;
     grid-template-areas:
       'title title tools'
-      'status priority due'
+      'status pace priority'
+      'due due due'
       'assigner assignees assignees';
     gap: 8px 10px;
     padding: 12px 12px 12px var(--task-row-start);
+  }
+  .row-pace {
+    grid-area: pace;
   }
   .task-row-context {
     grid-template-areas: 'title title title';
@@ -2916,11 +2921,23 @@ h3 {
   border: 1px solid #f0ecf9;
   border-radius: 6px;
 }
+.row-pace {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
 .row-due {
   display: flex;
   flex-direction: column;
   gap: 2px;
   justify-content: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+.row-due .date-item,
+.row-due .date-item .date-val {
+  white-space: nowrap;
 }
 .date-item {
   display: inline-flex;
