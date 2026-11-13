@@ -947,6 +947,132 @@ export function Calendar({ tasks, today, onOpen, onAdd }) {
   )
 }
 
+function getTaskPace(task, today) {
+  const isDone = task.status === 'done'
+  const isExtension = Boolean(task.extension_pending)
+  const dueDate = task.due_date || ''
+  const assignedDate = task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
+  const doneDate = task.status_updated_at ? task.status_updated_at.slice(0, 10) : (task.updated_at ? task.updated_at.slice(0, 10) : today)
+
+  if (isExtension) {
+    if (dueDate && dueDate < today) return 'late'
+    return 'on_time'
+  }
+
+  if (isDone) {
+    if (!dueDate) return 'on_time'
+    if (doneDate < dueDate) return 'early'
+    if (doneDate === dueDate) return 'on_time'
+    return 'late'
+  }
+
+  if (!dueDate) return 'on_time'
+  if (dueDate < today) return 'late'
+  return 'on_time'
+}
+
+function getTaskEffectiveStatusKey(task) {
+  if (task.extension_pending) return 'extension'
+  if (task.status === 'todo') return 'todo'
+  if (task.status === 'doing') return 'doing'
+  if (task.status === 'review') return 'review'
+  if (task.status === 'done') return 'done'
+  return 'todo'
+}
+
+const REPORT_SECTIONS = [
+  {
+    key: 'todo',
+    label: 'Chưa thực hiện',
+    levels: [
+      { key: 'on_time', label: 'Đúng tiến độ' },
+      { key: 'late', label: 'Chậm tiến độ' },
+    ],
+  },
+  {
+    key: 'doing',
+    label: 'Đang thực hiện',
+    levels: [
+      { key: 'on_time', label: 'Đúng tiến độ' },
+      { key: 'late', label: 'Chậm tiến độ' },
+    ],
+  },
+  {
+    key: 'review',
+    label: 'Chờ duyệt',
+    levels: [
+      { key: 'on_time', label: 'Đúng tiến độ' },
+      { key: 'late', label: 'Chậm tiến độ' },
+    ],
+  },
+  {
+    key: 'extension',
+    label: 'Yêu cầu gia hạn',
+    levels: [
+      { key: 'on_time', label: 'Đúng tiến độ' },
+      { key: 'late', label: 'Chậm tiến độ' },
+    ],
+  },
+  {
+    key: 'done',
+    label: 'Hoàn thành',
+    levels: [
+      { key: 'late', label: 'Chậm tiến độ' },
+      { key: 'on_time', label: 'Đúng tiến độ' },
+      { key: 'early', label: 'Vượt tiến độ' },
+    ],
+  },
+  {
+    key: 'deleted',
+    label: 'Đã xóa',
+    levels: [
+      { key: 'all', label: null },
+    ],
+  },
+]
+
+function buildStructuredMatrix(tasks, deletedTasks, bounds, cutoffDate, isCurrent) {
+  const activeTasks = tasks.filter((task) => {
+    const assignedDate =
+      task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
+    return !assignedDate || assignedDate <= cutoffDate
+  })
+
+  const deletedList = deletedTasks.filter((task) => {
+    const delDate = task.deleted_at ? task.deleted_at.slice(0, 10) : ''
+    return delDate && delDate <= cutoffDate
+  })
+
+  const matrix = {}
+  for (const sec of REPORT_SECTIONS) {
+    matrix[sec.key] = {}
+    for (const lev of sec.levels) {
+      matrix[sec.key][lev.key] = []
+    }
+  }
+
+  for (const task of activeTasks) {
+    const statusKey = getTaskEffectiveStatusKey(task)
+    const paceKey = getTaskPace(task, cutoffDate)
+    if (matrix[statusKey] && matrix[statusKey][paceKey]) {
+      matrix[statusKey][paceKey].push(task)
+    } else if (matrix[statusKey] && matrix[statusKey]['on_time']) {
+      matrix[statusKey]['on_time'].push(task)
+    }
+  }
+
+  matrix['deleted']['all'] = deletedList
+
+  let total = 0
+  for (const sec of REPORT_SECTIONS) {
+    for (const lev of sec.levels) {
+      total += matrix[sec.key][lev.key]?.length || 0
+    }
+  }
+
+  return { matrix, total }
+}
+
 function getWeekBounds(todayStr, offsetWeeks = 0) {
   const d = parseDay(todayStr)
   const dayOfWeek = (d.getDay() + 6) % 7
@@ -1116,6 +1242,24 @@ export function ReportPanel({
   const targetBounds = getWeekBounds(today, targetWeek)
   const compareBounds = getWeekBounds(today, effectiveCompare)
 
+  const targetCutoff = targetWeek === 0 ? today : targetBounds.end
+  const compareCutoff = compareBounds.end
+
+  const targetMatrix = buildStructuredMatrix(
+    scopedTasks,
+    scopedDeleted,
+    targetBounds,
+    targetCutoff,
+    targetWeek === 0,
+  )
+  const compareMatrix = buildStructuredMatrix(
+    scopedTasks,
+    scopedDeleted,
+    compareBounds,
+    compareCutoff,
+    false,
+  )
+
   const currentReport = buildWeekReport(
     scopedTasks,
     scopedDeleted,
@@ -1134,6 +1278,8 @@ export function ReportPanel({
   const compareLabel =
     compareOptions.find((w) => w.offset === effectiveCompare)?.label ||
     'Tuần trước'
+
+  const cutoffDateLabel = fullDate(targetCutoff).slice(0, 5)
 
   return (
     <div className="report-page">
@@ -1206,51 +1352,134 @@ export function ReportPanel({
         </div>
       </section>
 
+      {/* Bảng báo cáo tiến độ theo mẫu chuẩn */}
       <section className="panel report-section">
         <div className="report-section-header">
           <div>
-            <h2>So sánh số lượng theo trạng thái</h2>
+            <h2>Báo cáo trạng thái & tiến độ công việc</h2>
             <p>
-              Đối chiếu phân bổ trạng thái công việc giữa{' '}
-              <strong>{targetLabel}</strong> và <strong>{compareLabel}</strong>
+              Đánh giá tiến độ dựa vào Ngày giao và Hạn hoàn thành lũy kế đến ngày{' '}
+              <strong>{cutoffDateLabel}</strong>, đối chiếu với{' '}
+              <strong>{compareLabel.toLowerCase()}</strong>
             </p>
           </div>
         </div>
-        <div className="report-status-grid">
-          {Object.entries(statuses).map(([key, item]) => {
-            const cur = currentReport.statusCounts[key] ?? 0
-            const prev = previousReport.statusCounts[key] ?? 0
-            const diff = cur - prev
-            return (
-              <div className={'report-status-card ' + item.color} key={key}>
-                <div className="report-status-head">
-                  <span className={'badge ' + item.color}>
-                    <span className="status-dot" />
-                    {item.label}
-                  </span>
-                  <span
-                    className={
-                      'report-status-diff' +
-                      (diff > 0 ? ' up' : diff < 0 ? ' down' : '')
-                    }
-                  >
-                    {diff > 0 ? '+' + diff : diff === 0 ? '0' : diff} so với{' '}
-                    {compareLabel.toLowerCase()}
-                  </span>
-                </div>
-                <div className="report-status-values">
-                  <div>
-                    <small>{targetLabel}</small>
-                    <strong>{cur} việc</strong>
-                  </div>
-                  <div className="report-status-prev">
-                    <small>{compareLabel}</small>
-                    <span>{prev} việc</span>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+
+        <div className="report-table-wrap">
+          <table className="report-matrix-table">
+            <thead>
+              <tr>
+                <th style={{ width: '18%' }}>Trạng thái công việc</th>
+                <th style={{ width: '18%' }}>Mức độ hoàn thành</th>
+                <th style={{ width: '14%', textAlign: 'center' }}>
+                  Số lượng lũy kế đến {cutoffDateLabel}
+                </th>
+                <th style={{ width: '14%', textAlign: 'center' }}>
+                  So sánh với {compareLabel}
+                </th>
+                <th style={{ width: '36%' }}>
+                  Chi tiết Đầu mục công việc thay đổi trạng thái
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {REPORT_SECTIONS.map((sec) => {
+                return sec.levels.map((lev, levIdx) => {
+                  const curTasks = targetMatrix.matrix[sec.key]?.[lev.key] || []
+                  const curCount = curTasks.length
+                  const prevCount = compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0
+                  const diff = curCount - prevCount
+
+                  // Lọc công việc trong nhóm này có thay đổi trạng thái hoặc mới cập nhật trong kỳ
+                  const changedInGroup = currentReport.statusChanged.filter((t) => {
+                    if (sec.key === 'deleted') return t.isDeleted
+                    const statusKey = getTaskEffectiveStatusKey(t)
+                    if (statusKey !== sec.key) return false
+                    const pace = getTaskPace(t, targetCutoff)
+                    return pace === lev.key
+                  })
+
+                  // Nếu không có statusChanged khớp riêng, nhưng có công việc trong nhóm, hiển thị bullet đầu mục
+                  const itemsToShow = changedInGroup.length > 0 ? changedInGroup : curTasks
+
+                  return (
+                    <tr key={sec.key + '-' + lev.key}>
+                      {levIdx === 0 && (
+                        <td
+                          rowSpan={sec.levels.length}
+                          className="matrix-status-cell"
+                        >
+                          <strong>{sec.label}</strong>
+                        </td>
+                      )}
+                      <td className="matrix-pace-cell">
+                        {lev.label || '—'}
+                      </td>
+                      <td className="matrix-count-cell">
+                        <strong>{curCount}</strong>
+                      </td>
+                      <td
+                        className={
+                          'matrix-diff-cell ' +
+                          (diff > 0 ? 'up' : diff < 0 ? 'down' : 'zero')
+                        }
+                      >
+                        {diff > 0 ? '+' + diff : diff}
+                      </td>
+                      <td className="matrix-detail-cell">
+                        {itemsToShow.length > 0 ? (
+                          <ul className="matrix-detail-list">
+                            {itemsToShow.map((t) => {
+                              const transText =
+                                t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus
+                                  ? ` "${t.title}" ${statuses[t.fromStatus]?.label || t.fromStatus} => ${statuses[t.toStatus]?.label || t.toStatus}`
+                                  : ` ${t.title}`
+                              return (
+                                <li key={t.id}>
+                                  <button
+                                    type="button"
+                                    className="matrix-task-bullet-btn"
+                                    onClick={() => onOpen(t)}
+                                  >
+                                    • {transText}
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : null}
+                      </td>
+                    </tr>
+                  )
+                })
+              })}
+              <tr className="matrix-total-row">
+                <td colSpan={2}>
+                  <strong>Tổng công việc</strong>
+                </td>
+                <td className="matrix-count-cell">
+                  <strong>{targetMatrix.total}</strong>
+                </td>
+                <td
+                  className={
+                    'matrix-diff-cell ' +
+                    (targetMatrix.total - compareMatrix.total > 0
+                      ? 'up'
+                      : targetMatrix.total - compareMatrix.total < 0
+                        ? 'down'
+                        : 'zero')
+                  }
+                >
+                  <strong>
+                    {targetMatrix.total - compareMatrix.total > 0
+                      ? '+' + (targetMatrix.total - compareMatrix.total)
+                      : targetMatrix.total - compareMatrix.total}
+                  </strong>
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
