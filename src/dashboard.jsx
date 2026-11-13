@@ -1180,23 +1180,50 @@ function buildWeekReport(tasks, deletedTasks, bounds, isCurrentSelection) {
   }
 }
 
-function StatusTransitionCell({ fromStatus, toStatus }) {
-  const fromItem = statuses[fromStatus] || { label: 'Mới tạo', color: 'gray' }
-  const toItem =
-    toStatus === 'deleted'
-      ? { label: 'Đã xóa', color: 'red-badge' }
-      : statuses[toStatus] || { label: toStatus, color: 'gray' }
+function MatrixDetailCell({ items = [], onOpen }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!items.length) return null
+
+  const visibleItems = expanded || items.length <= 3 ? items : items.slice(0, 3)
+  const remaining = items.length - 3
+
   return (
-    <div className="report-transition">
-      <span className={'badge ' + fromItem.color}>
-        <span className="status-dot" />
-        {fromItem.label}
-      </span>
-      <ArrowRight size={14} className="report-transition-arrow" />
-      <span className={'badge ' + toItem.color}>
-        <span className="status-dot" />
-        {toItem.label}
-      </span>
+    <div className="matrix-detail-cell-content">
+      <ul className="matrix-detail-list">
+        {visibleItems.map((t) => {
+          const toLabel =
+            t.toStatus === 'deleted'
+              ? 'Đã xóa'
+              : statuses[t.toStatus]?.label || t.toStatus
+          const fromLabel =
+            statuses[t.fromStatus]?.label || t.fromStatus
+
+          const transText =
+            t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus
+              ? ` "${t.title}" ${fromLabel} => ${toLabel}`
+              : ` "${t.title}"`
+          return (
+            <li key={t.id}>
+              <button
+                type="button"
+                className="matrix-task-bullet-btn"
+                onClick={() => onOpen(t)}
+              >
+                • {transText}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {items.length > 3 && (
+        <button
+          type="button"
+          className="matrix-toggle-btn"
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          {expanded ? '▲ Thu gọn' : `▼ Xem thêm (+${remaining} công việc)`}
+        </button>
+      )}
     </div>
   )
 }
@@ -1427,34 +1454,7 @@ export function ReportPanel({
                         {diff > 0 ? '+' + diff : diff}
                       </td>
                       <td className="matrix-detail-cell">
-                        {itemsToShow.length > 0 ? (
-                          <ul className="matrix-detail-list">
-                            {itemsToShow.map((t) => {
-                              const toLabel =
-                                t.toStatus === 'deleted'
-                                  ? 'Đã xóa'
-                                  : statuses[t.toStatus]?.label || t.toStatus
-                              const fromLabel =
-                                statuses[t.fromStatus]?.label || t.fromStatus
-
-                              const transText =
-                                t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus
-                                  ? ` "${t.title}" ${fromLabel} => ${toLabel}`
-                                  : ` "${t.title}"`
-                              return (
-                                <li key={t.id}>
-                                  <button
-                                    type="button"
-                                    className="matrix-task-bullet-btn"
-                                    onClick={() => onOpen(t)}
-                                  >
-                                    • {transText}
-                                  </button>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                        ) : null}
+                        <MatrixDetailCell items={itemsToShow} onOpen={onOpen} />
                       </td>
                     </tr>
                   )

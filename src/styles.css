@@ -4166,6 +4166,11 @@ h3 {
 .matrix-detail-cell {
   padding: 7px 12px;
 }
+.matrix-detail-cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .matrix-detail-list {
   margin: 0;
   padding-left: 0;
@@ -4188,6 +4193,23 @@ h3 {
 .matrix-task-bullet-btn:hover {
   text-decoration: underline;
   color: var(--purple, #6544d8);
+}
+.matrix-toggle-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: #f1e9ff;
+  border: 1px solid #d9c8fc;
+  border-radius: 6px;
+  color: var(--purple-dark, #5232ba);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.matrix-toggle-btn:hover {
+  background: #e2d2ff;
+  color: #3e1ea6;
 }
 .matrix-total-row td {
   background: linear-gradient(180deg, #f4eeff 0%, #ede4fc 100%);
