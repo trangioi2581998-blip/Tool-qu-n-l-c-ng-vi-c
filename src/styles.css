@@ -2948,6 +2948,66 @@ h3 {
   color: #dc2626;
   font-weight: 700;
 }
+
+/* Badge mức độ hoàn thành / tiến độ công việc trên thẻ */
+.board-card-pace {
+  margin: 4px 0 5px 0;
+  display: flex;
+  align-items: center;
+}
+.task-pace-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+.task-pace-pill .pace-dot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Đúng tiến độ: nền xanh lá dịu, viền xanh lá, chữ xanh đậm */
+.task-pace-pill.pace-on_time {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+.task-pace-pill.pace-on_time .pace-dot {
+  background: #10b981;
+}
+
+/* Chậm tiến độ: nền đỏ dịu, viền đỏ, chữ đỏ đậm */
+.task-pace-pill.pace-late {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+.task-pace-pill.pace-late .pace-dot {
+  background: #ef4444;
+}
+
+/* Vượt tiến độ: nền xanh dương dịu, viền xanh dương, chữ xanh dương đậm */
+.task-pace-pill.pace-early {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.task-pace-pill.pace-early .pace-dot {
+  background: #3b82f6;
+}
+
+.row-due-pace {
+  margin-top: 4px;
+}
 .assigned-stamp {
   color: var(--muted);
   font-size: 10px;

@@ -357,6 +357,62 @@ function InlineStatusPicker({ task, editable, busy, onStatus }) {
   )
 }
 
+export const PACE_CONFIG = {
+  on_time: {
+    label: 'Đúng tiến độ',
+    key: 'on_time',
+    className: 'pace-on_time',
+  },
+  late: {
+    label: 'Chậm tiến độ',
+    key: 'late',
+    className: 'pace-late',
+  },
+  early: {
+    label: 'Vượt tiến độ',
+    key: 'early',
+    className: 'pace-early',
+  },
+}
+
+export function getTaskPace(task, today) {
+  const isDone = task.status === 'done'
+  const isExtension = Boolean(task.extension_pending)
+  const dueDate = task.due_date || ''
+  const doneDate = task.status_updated_at
+    ? task.status_updated_at.slice(0, 10)
+    : task.updated_at
+      ? task.updated_at.slice(0, 10)
+      : today
+
+  if (isExtension) {
+    if (dueDate && dueDate < today) return 'late'
+    return 'on_time'
+  }
+
+  if (isDone) {
+    if (!dueDate) return 'on_time'
+    if (doneDate < dueDate) return 'early'
+    if (doneDate === dueDate) return 'on_time'
+    return 'late'
+  }
+
+  if (!dueDate) return 'on_time'
+  if (dueDate < today) return 'late'
+  return 'on_time'
+}
+
+export function TaskPaceBadge({ task, today }) {
+  const paceKey = getTaskPace(task, today)
+  const pace = PACE_CONFIG[paceKey] || PACE_CONFIG.on_time
+  return (
+    <span className={'task-pace-pill ' + pace.className} title={'Mức độ hoàn thành: ' + pace.label}>
+      <span className="pace-dot" />
+      {pace.label}
+    </span>
+  )
+}
+
 function TaskListRow({
   task,
   members,
@@ -459,6 +515,9 @@ function TaskListRow({
                 </span>
               </div>
             )}
+            <div className="row-due-pace">
+              <TaskPaceBadge task={task} today={today} />
+            </div>
           </div>
           <div className="row-tools" role="cell">
             <IconButton label={'Mở ' + task.title} onClick={() => onOpen(task)}>
@@ -704,6 +763,9 @@ export function Board({
                     <span className="badge amber">Chờ duyệt gia hạn</span>
                   )}
                 </div>
+                <div className="board-card-pace">
+                  <TaskPaceBadge task={task} today={today} />
+                </div>
                 <div className="board-card-footer">
                   <Priority priority={task.priority} />
                   {childrenByTask[task.id]?.length > 0 && (
@@ -945,30 +1007,6 @@ export function Calendar({ tasks, today, onOpen, onAdd }) {
       </div>
     </section>
   )
-}
-
-function getTaskPace(task, today) {
-  const isDone = task.status === 'done'
-  const isExtension = Boolean(task.extension_pending)
-  const dueDate = task.due_date || ''
-  const assignedDate = task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
-  const doneDate = task.status_updated_at ? task.status_updated_at.slice(0, 10) : (task.updated_at ? task.updated_at.slice(0, 10) : today)
-
-  if (isExtension) {
-    if (dueDate && dueDate < today) return 'late'
-    return 'on_time'
-  }
-
-  if (isDone) {
-    if (!dueDate) return 'on_time'
-    if (doneDate < dueDate) return 'early'
-    if (doneDate === dueDate) return 'on_time'
-    return 'late'
-  }
-
-  if (!dueDate) return 'on_time'
-  if (dueDate < today) return 'late'
-  return 'on_time'
 }
 
 function getTaskEffectiveStatusKey(task) {
