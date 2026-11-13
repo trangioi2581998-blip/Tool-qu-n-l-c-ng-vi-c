@@ -4218,6 +4218,227 @@ h3 {
   border-top: 2px solid #bda8f2;
   font-size: 13.5px;
 }
+
+/* Ẩn/hiện tương ứng giữa Bảng Desktop và Thẻ Mobile */
+.report-matrix-cards-wrap {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .report-table-desktop {
+    display: none !important;
+  }
+  .report-matrix-cards-wrap {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+  }
+}
+
+/* Card tổng quan trên Mobile */
+.matrix-mobile-summary-card {
+  background: linear-gradient(135deg, #6544d8 0%, #7e57c2 100%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(101, 68, 216, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.matrix-mobile-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.matrix-summary-pill {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.matrix-summary-diff-badge {
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+.matrix-summary-diff-badge strong {
+  margin-left: 2px;
+}
+.matrix-summary-diff-badge.up strong {
+  color: #86efac;
+}
+.matrix-summary-diff-badge.down strong {
+  color: #fca5a5;
+}
+.matrix-mobile-summary-bottom {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.matrix-summary-number {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+.matrix-summary-desc {
+  font-size: 13px;
+  opacity: 0.92;
+  font-weight: 500;
+}
+
+/* Thẻ trạng thái công việc (Status Card) */
+.matrix-status-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5def5;
+  box-shadow: 0 2px 8px rgba(101, 68, 216, 0.04);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.matrix-status-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  background: #faf8ff;
+  border-bottom: 1px solid #f0eafc;
+}
+.matrix-status-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot-todo { background: #64748b; }
+.dot-doing { background: #6544d8; }
+.dot-review { background: #f59e0b; }
+.dot-extension { background: #ef4444; }
+.dot-done { background: #10b981; }
+.dot-deleted { background: #94a3b8; }
+
+.matrix-status-card-title h3 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #24223a;
+}
+.matrix-status-card-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-total-count {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #3b2a6b;
+  background: #ede8f7;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.card-diff-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+.card-diff-tag.up { background: #dcfce7; color: #15803d; }
+.card-diff-tag.down { background: #fee2e2; color: #b91c1c; }
+.card-diff-tag.zero { background: #f1f5f9; color: #64748b; }
+
+.matrix-status-card-body {
+  padding: 4px 14px 10px;
+  display: flex;
+  flex-direction: column;
+}
+.matrix-level-row {
+  padding: 9px 0;
+  border-bottom: 1px dashed #efe9f7;
+}
+.matrix-level-row:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.matrix-level-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.matrix-pace-tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.matrix-pace-tag.pace-on_time {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.matrix-pace-tag.pace-late {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+.matrix-pace-tag.pace-early {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.matrix-pace-tag.pace-all {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.matrix-level-stats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.matrix-level-count {
+  font-size: 12.5px;
+  color: #24223a;
+}
+.matrix-level-count strong {
+  font-weight: 700;
+}
+.matrix-level-diff {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.matrix-level-diff.up { color: #16a34a; }
+.matrix-level-diff.down { color: #dc2626; }
+.matrix-level-diff.zero { color: #8c85a3; }
+
+.matrix-level-detail {
+  background: #faf8fe;
+  border: 1px solid #f0e9f8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 4px;
+}
+.matrix-level-detail .matrix-detail-list {
+  gap: 6px;
+}
+.matrix-level-detail .matrix-task-bullet-btn {
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-word;
+}
 .email-center-body {
   display: grid;
   gap: 10px;

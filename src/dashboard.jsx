@@ -1406,7 +1406,8 @@ export function ReportPanel({
           </div>
         </div>
 
-        <div className="report-table-wrap">
+        {/* Bảng ma trận hiển thị trên Desktop / Tablet */}
+        <div className="report-table-wrap report-table-desktop">
           <table className="report-matrix-table">
             <thead>
               <tr>
@@ -1502,6 +1503,121 @@ export function ReportPanel({
               </tr>
             </tbody>
           </table>
+        </div>
+
+        {/* Giao diện Thẻ (Card) tối ưu riêng cho Mobile */}
+        <div className="report-matrix-cards-wrap">
+          {/* Card Tổng quan */}
+          <div className="matrix-mobile-summary-card">
+            <div className="matrix-mobile-summary-top">
+              <span className="matrix-summary-pill">Tổng công việc</span>
+              <div
+                className={
+                  'matrix-summary-diff-badge ' +
+                  (targetMatrix.totalActive - compareMatrix.totalActive > 0
+                    ? 'up'
+                    : targetMatrix.totalActive - compareMatrix.totalActive < 0
+                      ? 'down'
+                      : 'zero')
+                }
+              >
+                <span>So với {compareLabel.toLowerCase()}: </span>
+                <strong>
+                  {targetMatrix.totalActive - compareMatrix.totalActive > 0
+                    ? '+' + (targetMatrix.totalActive - compareMatrix.totalActive)
+                    : targetMatrix.totalActive - compareMatrix.totalActive}
+                </strong>
+              </div>
+            </div>
+            <div className="matrix-mobile-summary-bottom">
+              <span className="matrix-summary-number">{targetMatrix.totalActive}</span>
+              <span className="matrix-summary-desc">công việc đang quản lý</span>
+            </div>
+          </div>
+
+          {/* Các Thẻ trạng thái */}
+          {REPORT_SECTIONS.map((sec) => {
+            const secTotal = sec.levels.reduce(
+              (acc, lev) => acc + (targetMatrix.matrix[sec.key]?.[lev.key]?.length || 0),
+              0,
+            )
+            const secPrevTotal = sec.levels.reduce(
+              (acc, lev) => acc + (compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0),
+              0,
+            )
+            const secDiff = secTotal - secPrevTotal
+
+            return (
+              <div key={'mcard-' + sec.key} className={'matrix-status-card card-' + sec.key}>
+                <div className="matrix-status-card-header">
+                  <div className="matrix-status-card-title">
+                    <span className={'status-dot-indicator dot-' + sec.key}></span>
+                    <h3>{sec.label}</h3>
+                  </div>
+                  <div className="matrix-status-card-badge">
+                    <span className="card-total-count">{secTotal} việc</span>
+                    <span
+                      className={
+                        'card-diff-tag ' +
+                        (secDiff > 0 ? 'up' : secDiff < 0 ? 'down' : 'zero')
+                      }
+                    >
+                      {secDiff > 0 ? '+' + secDiff : secDiff}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="matrix-status-card-body">
+                  {sec.levels.map((lev) => {
+                    const curTasks = targetMatrix.matrix[sec.key]?.[lev.key] || []
+                    const curCount = curTasks.length
+                    const prevCount = compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0
+                    const diff = curCount - prevCount
+
+                    const changedInGroup = currentReport.statusChanged.filter((t) => {
+                      if (t.isDeleted) return sec.key === 'deleted'
+                      if (sec.key === 'deleted') return false
+                      const statusKey = getTaskEffectiveStatusKey(t)
+                      if (statusKey !== sec.key) return false
+                      const pace = getTaskPace(t, targetCutoff)
+                      return pace === lev.key
+                    })
+
+                    const itemsToShow = changedInGroup.length > 0 ? changedInGroup : curTasks
+
+                    return (
+                      <div key={'mlevel-' + sec.key + '-' + lev.key} className="matrix-level-row">
+                        <div className="matrix-level-meta">
+                          <span className={'matrix-pace-tag pace-' + (lev.key || 'all')}>
+                            {lev.label || 'Tất cả'}
+                          </span>
+                          <div className="matrix-level-stats">
+                            <span className="matrix-level-count">
+                              <strong>{curCount}</strong> việc
+                            </span>
+                            <span
+                              className={
+                                'matrix-level-diff ' +
+                                (diff > 0 ? 'up' : diff < 0 ? 'down' : 'zero')
+                              }
+                            >
+                              ({diff > 0 ? '+' + diff : diff})
+                            </span>
+                          </div>
+                        </div>
+
+                        {itemsToShow.length > 0 && (
+                          <div className="matrix-level-detail">
+                            <MatrixDetailCell items={itemsToShow} onOpen={onOpen} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
     </div>
