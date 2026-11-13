@@ -418,7 +418,8 @@ export function createBackend(authUser) {
       void dispatchPendingEmails()
       return res
     },
-    async createMember(team, name, email, password, department = '') {
+    async createMember(team, name, email, password, department = '', role = 'member') {
+      let resData = null
       const direct = await client.rpc('work_create_member_direct', {
         target_team: team.id,
         member_name: name,
@@ -428,26 +429,37 @@ export function createBackend(authUser) {
       })
       if (!direct.error && direct.data) {
         void dispatchPendingEmails()
-        return direct.data
-      }
-      if (direct.error && direct.error.code !== 'PGRST202') {
-        throw direct.error
-      }
-      const response = await client.functions.invoke('provision-work-member', {
-        body: { teamId: team.id, name, email, password, department },
-      })
-      if (response.error) {
-        const context = response.error.context
-        if (context instanceof Response) {
-          const info = await context.json().catch(() => null)
-          if (info?.error) throw new Error(info.error)
+        resData = direct.data
+      } else {
+        if (direct.error && direct.error.code !== 'PGRST202') {
+          throw direct.error
         }
-        throw new Error(
-          'Không thể kết nối chức năng tạo tài khoản. Hãy kiểm tra Edge Function và địa chỉ website.',
-        )
+        const response = await client.functions.invoke('provision-work-member', {
+          body: { teamId: team.id, name, email, password, department },
+        })
+        if (response.error) {
+          const context = response.error.context
+          if (context instanceof Response) {
+            const info = await context.json().catch(() => null)
+            if (info?.error) throw new Error(info.error)
+          }
+          throw new Error(
+            'Không thể kết nối chức năng tạo tài khoản. Hãy kiểm tra Edge Function và địa chỉ website.',
+          )
+        }
+        void dispatchPendingEmails()
+        resData = response.data
       }
-      void dispatchPendingEmails()
-      return response.data
+
+      if (role && role !== 'member' && resData?.member?.user_id) {
+        try {
+          await this.setMemberRole(team.id, resData.member.user_id, role)
+          resData.member.role = role
+        } catch (err) {
+          console.warn('Set member role on create error:', err)
+        }
+      }
+      return resData
     },
     async updateMember(team, userId, fields) {
       const res = result(

@@ -334,15 +334,25 @@ export function AccountDialog({
         }
         onUpdated(updated)
       } else {
-        onCreated(
-          await repo.createMember(
-            team,
-            name.trim(),
-            email.trim(),
-            password,
-            department.trim(),
-          ),
+        const created = await repo.createMember(
+          team,
+          name.trim(),
+          email.trim(),
+          password,
+          department.trim(),
+          role,
         )
+        const targetUserId = created?.member?.user_id || created?.user_id
+        if (role && role !== 'member' && targetUserId && created?.member?.role !== role) {
+          try {
+            await repo.setMemberRole(team.id, targetUserId, role)
+          } catch (e) {
+            console.warn('Fallback setMemberRole failed:', e)
+          }
+          if (created.member) created.member.role = role
+          else created.role = role
+        }
+        onCreated(created)
       }
     } catch (error) {
       setError(readableError(error))
@@ -394,7 +404,7 @@ export function AccountDialog({
             onChange={(event) => setDepartment(event.target.value)}
           />
         </label>
-        {editing && member.role !== 'owner' && (
+        {(!editing || member.role !== 'owner') && (
           <label>
             Vai trò trong nhóm
             <select

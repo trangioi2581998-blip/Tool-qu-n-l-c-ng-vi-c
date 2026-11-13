@@ -1090,7 +1090,7 @@ export function createDemo(userId, onAccounts) {
       save()
       return { request: reviewed, task: taskWithExtension(task) }
     },
-    async createMember(team, name, email, password, department = '') {
+    async createMember(team, name, email, password, department = '', role = 'member') {
       if (membership(team.id)?.role !== 'owner')
         throw new Error('Chỉ trưởng nhóm có thể tạo tài khoản.')
       const normalized = email.trim().toLowerCase()
@@ -1107,7 +1107,7 @@ export function createDemo(userId, onAccounts) {
           email: normalized,
           password: pass,
           department: dept,
-          roleLabel: 'Nhân viên',
+          roleLabel: role === 'deputy' ? 'Phó nhóm' : 'Nhân viên',
         }
         state.accounts.push(account)
       } else {
@@ -1137,6 +1137,7 @@ export function createDemo(userId, onAccounts) {
           display_name: name.trim(),
           email: normalized,
           department: dept,
+          role: role || current.role || 'member',
         })
         save()
         onAccounts(demoAccounts())
@@ -1147,7 +1148,7 @@ export function createDemo(userId, onAccounts) {
         display_name: name.trim(),
         email: normalized,
         department: dept,
-        role: 'member',
+        role: role || 'member',
       }
       state.members[team.id].push(member)
       queueMail(
