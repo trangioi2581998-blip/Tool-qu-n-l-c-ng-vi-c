@@ -1032,15 +1032,17 @@ const REPORT_SECTIONS = [
 ]
 
 function buildStructuredMatrix(tasks, deletedTasks, bounds, cutoffDate, isCurrent) {
-  const activeTasks = tasks.filter((task) => {
-    const assignedDate =
-      task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
-    return !assignedDate || assignedDate <= cutoffDate
-  })
+  const activeTasks = isCurrent
+    ? tasks
+    : tasks.filter((task) => {
+        const assignedDate =
+          task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
+        return !assignedDate || assignedDate <= cutoffDate
+      })
 
   const deletedList = deletedTasks.filter((task) => {
     const delDate = task.deleted_at ? task.deleted_at.slice(0, 10) : ''
-    return delDate && delDate <= cutoffDate
+    return inBounds(delDate, bounds)
   })
 
   const matrix = {}
@@ -1052,7 +1054,14 @@ function buildStructuredMatrix(tasks, deletedTasks, bounds, cutoffDate, isCurren
   }
 
   for (const task of activeTasks) {
-    const statusKey = getTaskEffectiveStatusKey(task)
+    const effectiveStatus =
+      !isCurrent &&
+      task.status_updated_at &&
+      task.status_updated_at > bounds.end &&
+      task.previous_status
+        ? task.previous_status
+        : task.status
+    const statusKey = getTaskEffectiveStatusKey({ ...task, status: effectiveStatus })
     const paceKey = getTaskPace(task, cutoffDate)
     if (matrix[statusKey] && matrix[statusKey][paceKey]) {
       matrix[statusKey][paceKey].push(task)
@@ -1063,14 +1072,17 @@ function buildStructuredMatrix(tasks, deletedTasks, bounds, cutoffDate, isCurren
 
   matrix['deleted']['all'] = deletedList
 
-  let total = 0
+  let totalActive = 0
   for (const sec of REPORT_SECTIONS) {
+    if (sec.key === 'deleted') continue
     for (const lev of sec.levels) {
-      total += matrix[sec.key][lev.key]?.length || 0
+      totalActive += matrix[sec.key][lev.key]?.length || 0
     }
   }
 
-  return { matrix, total }
+  const total = totalActive + (matrix['deleted']?.['all']?.length || 0)
+
+  return { matrix, total, totalActive }
 }
 
 function getWeekBounds(todayStr, offsetWeeks = 0) {
@@ -1148,11 +1160,13 @@ function buildWeekReport(tasks, deletedTasks, bounds, isCurrentSelection) {
     })),
   ].sort((a, b) => (b.actionDate || '').localeCompare(a.actionDate || ''))
 
-  const activeTasks = tasks.filter((task) => {
-    const assignedDate =
-      task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
-    return !assignedDate || assignedDate <= bounds.end
-  })
+  const activeTasks = isCurrentSelection
+    ? tasks
+    : tasks.filter((task) => {
+        const assignedDate =
+          task.assigned_on || (task.created_at ? task.created_at.slice(0, 10) : '')
+        return !assignedDate || assignedDate <= bounds.end
+      })
 
   const statusCounts = { todo: 0, doing: 0, review: 0, done: 0 }
   for (const task of activeTasks) {
@@ -1419,7 +1433,8 @@ export function ReportPanel({
 
                   // Lọc công việc trong nhóm này có thay đổi trạng thái hoặc mới cập nhật trong kỳ
                   const changedInGroup = currentReport.statusChanged.filter((t) => {
-                    if (sec.key === 'deleted') return t.isDeleted
+                    if (t.isDeleted) return sec.key === 'deleted'
+                    if (sec.key === 'deleted') return false
                     const statusKey = getTaskEffectiveStatusKey(t)
                     if (statusKey !== sec.key) return false
                     const pace = getTaskPace(t, targetCutoff)
@@ -1465,22 +1480,22 @@ export function ReportPanel({
                   <strong>Tổng công việc</strong>
                 </td>
                 <td className="matrix-count-cell">
-                  <strong>{targetMatrix.total}</strong>
+                  <strong>{targetMatrix.totalActive}</strong>
                 </td>
                 <td
                   className={
                     'matrix-diff-cell ' +
-                    (targetMatrix.total - compareMatrix.total > 0
+                    (targetMatrix.totalActive - compareMatrix.totalActive > 0
                       ? 'up'
-                      : targetMatrix.total - compareMatrix.total < 0
+                      : targetMatrix.totalActive - compareMatrix.totalActive < 0
                         ? 'down'
                         : 'zero')
                   }
                 >
                   <strong>
-                    {targetMatrix.total - compareMatrix.total > 0
-                      ? '+' + (targetMatrix.total - compareMatrix.total)
-                      : targetMatrix.total - compareMatrix.total}
+                    {targetMatrix.totalActive - compareMatrix.totalActive > 0
+                      ? '+' + (targetMatrix.totalActive - compareMatrix.totalActive)
+                      : targetMatrix.totalActive - compareMatrix.totalActive}
                   </strong>
                 </td>
                 <td></td>
