@@ -4114,11 +4114,11 @@ h3 {
   box-shadow: 0 2px 8px rgba(101, 68, 216, 0.05);
 }
 .report-matrix-table thead th {
-  background: linear-gradient(180deg, #f5f0ff 0%, #ede6fc 100%);
-  color: var(--purple-dark, #5232ba);
+  background: var(--purple, #6544d8);
+  color: #ffffff;
   font-weight: 700;
-  padding: 11px 14px;
-  border: 1px solid #dcd3f3;
+  padding: 12px 14px;
+  border: 1px solid #5535c5;
   vertical-align: middle;
   letter-spacing: -0.01em;
 }
