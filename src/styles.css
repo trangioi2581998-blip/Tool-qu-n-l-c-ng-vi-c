@@ -2566,10 +2566,16 @@ h3 {
   border-radius: 15px;
   background: white;
   width: min(460px, calc(100vw - 24px));
+  height: fit-content;
   max-height: calc(100dvh - 24px);
+  min-height: 0;
   padding: 0;
   box-shadow: 0 16px 70px #2819514d;
   color: var(--ink);
+}
+.dialog:not(.dialog-wide):not(.dialog-full-mobile) {
+  height: fit-content !important;
+  min-height: 0 !important;
 }
 .dialog:focus,
 .dialog:focus-visible {
@@ -2582,19 +2588,31 @@ h3 {
 }
 .dialog.dialog-full-mobile {
   width: min(480px, calc(100vw - 24px));
+  height: fit-content;
   max-height: calc(100dvh - 48px);
 }
 .dialog.dialog-compact {
-  width: min(440px, calc(100vw - 24px));
-  height: auto;
-  min-height: 0;
-  max-height: max-content;
+  width: min(400px, calc(100vw - 24px)) !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+  max-height: fit-content !important;
 }
 .dialog.dialog-wide[open],
 .dialog.dialog-full-mobile[open] {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+}
+.dialog.dialog-compact[open] {
+  display: flex !important;
+  flex-direction: column !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+}
+.dialog.dialog-compact .dialog-form {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 .dialog-tab-panel:not([hidden]) {
   display: flex;
@@ -4730,7 +4748,7 @@ h3 {
   /* 2. Compact / Hug-content dialogs on Mobile: Delete confirmation, transfer owner */
   .dialog.dialog-compact {
     width: min(390px, calc(100vw - 32px)) !important;
-    height: auto !important;
+    height: fit-content !important;
     min-height: 0 !important;
     max-height: calc(100dvh - 48px) !important;
     margin: auto !important;
@@ -4740,8 +4758,9 @@ h3 {
     overflow: hidden !important;
   }
   .dialog.dialog-compact[open] {
-    display: block !important;
-    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: fit-content !important;
     min-height: 0 !important;
   }
   .dialog.dialog-compact .dialog-form {
@@ -4752,6 +4771,7 @@ h3 {
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
+    flex: 0 0 auto !important;
   }
   .dialog.dialog-compact .form-actions {
     margin-top: 8px !important;
@@ -4771,7 +4791,7 @@ h3 {
   .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact) {
     width: min(420px, calc(100vw - 32px)) !important;
     max-height: calc(100dvh - 40px) !important;
-    height: auto !important;
+    height: fit-content !important;
     min-height: 0 !important;
     margin: auto !important;
     border: 1px solid #e0d8ef !important;
@@ -4780,13 +4800,13 @@ h3 {
     overflow: hidden !important;
   }
   .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact)[open] {
-    display: flex;
-    flex-direction: column;
-    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: fit-content !important;
     min-height: 0 !important;
   }
   .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact) .dialog-form {
-    flex: 0 1 auto !important;
+    flex: 0 0 auto !important;
     max-height: calc(100dvh - 120px);
     overflow-y: auto;
     height: auto !important;
