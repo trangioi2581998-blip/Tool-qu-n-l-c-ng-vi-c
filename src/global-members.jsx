@@ -766,6 +766,7 @@ export function GlobalMemberPanel({
   currentUserId,
   onOpenCreate,
   onOpenCreateTeam,
+  onEditTeam,
   notify,
   onSwitchTeam,
 }) {
@@ -980,6 +981,20 @@ export function GlobalMemberPanel({
                       )}
                     </span>
                     <h3>{t.name}</h3>
+                    {onEditTeam && (
+                      <button
+                        type="button"
+                        className="icon-button edit-team-inline-btn"
+                        style={{ width: '24px', height: '24px', padding: 0 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditTeam(t)
+                        }}
+                        title="Đổi tên dự án"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
                     <span className="member-tree-count-pill">
                       {teamMems.length} thành viên
                     </span>
@@ -998,6 +1013,17 @@ export function GlobalMemberPanel({
                       <UserPlus size={14} />
                       <span className="btn-label-desktop">Thêm thành viên</span>
                     </button>
+                    {onEditTeam && (
+                      <button
+                        type="button"
+                        className="button ghost sm"
+                        onClick={() => onEditTeam(t)}
+                        title="Chỉnh sửa tên dự án"
+                      >
+                        <Pencil size={14} />
+                        <span className="btn-label-desktop">Sửa tên dự án</span>
+                      </button>
+                    )}
                     {onSwitchTeam && (
                       <button
                         type="button"
@@ -1053,11 +1079,11 @@ export function GlobalMemberPanel({
                               <div className="member-tree-item-dept">
                                 {m.department ? (
                                   <span className="member-dept-badge">
-                                    {m.department}
+                                    Phòng ban: {m.department}
                                   </span>
                                 ) : (
                                   <span className="muted text-xs">
-                                    Chưa phân phòng
+                                    Phòng ban: Chưa phân phòng
                                   </span>
                                 )}
                               </div>
@@ -1082,7 +1108,7 @@ export function GlobalMemberPanel({
                                       style={{ marginRight: 4 }}
                                     />
                                   )}
-                                  {role === 'owner'
+                                  Vai trò: {role === 'owner'
                                     ? 'Trưởng nhóm'
                                     : role === 'deputy'
                                       ? 'Phó nhóm'

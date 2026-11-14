@@ -1932,6 +1932,7 @@ export default function App({
                   setModal({ type: 'create-directory-member' })
                 }
                 onOpenCreateTeam={() => onCreate('team')}
+                onEditTeam={onEditTeam}
                 notify={notify}
                 onSwitchTeam={switchTeam}
               />
