@@ -23,7 +23,7 @@ import {
   X,
 } from 'lucide-react'
 import { Avatar, Dialog, Dropdown, ErrorText, PasswordInput, readableError } from './ui.jsx'
-import { EditDirectoryMemberDialog } from './global-members.jsx'
+import { EditDirectoryMemberDialog, DeleteDirectoryMemberDialog } from './global-members.jsx'
 
 /**
  * Dialog tạo hoặc sửa phòng ban
@@ -444,6 +444,7 @@ export function DepartmentPanel({
   const [addingToDept, setAddingToDept] = useState(null)
   const [assigningMember, setAssigningMember] = useState(null)
   const [editingMember, setEditingMember] = useState(null)
+  const [deletingMember, setDeletingMember] = useState(null)
 
   const reload = async () => {
     setLoading(true)
@@ -749,6 +750,19 @@ export function DepartmentPanel({
                                       >
                                         <UserMinus size={15} /> Gỡ khỏi phòng ban này
                                       </button>
+                                      {!isCurrentUser && (
+                                        <button
+                                          type="button"
+                                          className="member-menu-item member-menu-danger"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setDeletingMember(m)
+                                            close()
+                                          }}
+                                        >
+                                          <Trash2 size={15} /> Xóa tài khoản hệ thống
+                                        </button>
+                                      )}
                                     </>
                                   )}
                                 </Dropdown>
@@ -828,13 +842,48 @@ export function DepartmentPanel({
                           </div>
 
                           <div className="member-tree-item-actions">
-                            <button
-                              type="button"
-                              className="button secondary sm"
-                              onClick={() => setAssigningMember(m)}
+                            <Dropdown
+                              label={`Thao tác với ${m.display_name}`}
+                              className="action-dropdown member-action-dropdown"
+                              trigger={<Ellipsis size={18} />}
                             >
-                              <Building2 size={14} /> Gán phòng ban…
-                            </button>
+                              {(close) => (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="member-menu-item"
+                                    onClick={() => {
+                                      close()
+                                      setAssigningMember(m)
+                                    }}
+                                  >
+                                    <Building2 size={15} /> Gán phòng ban…
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="member-menu-item"
+                                    onClick={() => {
+                                      close()
+                                      setEditingMember(m)
+                                    }}
+                                  >
+                                    <Pencil size={15} /> Sửa thông tin tài khoản
+                                  </button>
+                                  {m.user_id !== currentUserId && (
+                                    <button
+                                      type="button"
+                                      className="member-menu-item member-menu-danger"
+                                      onClick={() => {
+                                        close()
+                                        setDeletingMember(m)
+                                      }}
+                                    >
+                                      <Trash2 size={15} /> Xóa tài khoản hệ thống
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </Dropdown>
                           </div>
                         </div>
                       ))}
@@ -950,6 +999,19 @@ export function DepartmentPanel({
             )
             setEditingMember(null)
             notify('Đã cập nhật thông tin nhân sự.')
+          }}
+        />
+      )}
+
+      {deletingMember && (
+        <DeleteDirectoryMemberDialog
+          member={deletingMember}
+          repo={repo}
+          onClose={() => setDeletingMember(null)}
+          onDeleted={(userId) => {
+            setMembers((cur) => cur.filter((m) => m.user_id !== userId))
+            setDeletingMember(null)
+            notify('Đã xóa tài khoản nhân sự khỏi hệ thống.')
           }}
         />
       )}

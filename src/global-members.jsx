@@ -1088,92 +1088,64 @@ export function GlobalMemberPanel({
                                 </span>
                               </div>
 
-                              <div className="member-tree-item-actions">
-                                <Dropdown
-                                  label={`Thao tác với ${m.display_name}`}
-                                  className="action-dropdown member-action-dropdown"
-                                  trigger={<Ellipsis size={18} />}
-                                >
-                                  {(close) => (
-                                    <>
-                                      {role !== 'owner' && (
-                                        <>
-                                          {role === 'deputy' ? (
-                                            <button
-                                              type="button"
-                                              className="member-menu-item"
-                                              onClick={() => {
-                                                close()
-                                                handleChangeRole(
-                                                  t.id,
-                                                  m.user_id,
-                                                  'member',
-                                                )
-                                              }}
-                                            >
-                                              <UserMinus size={15} /> Gỡ quyền phó
-                                              nhóm
-                                            </button>
-                                          ) : (
-                                            <button
-                                              type="button"
-                                              className="member-menu-item"
-                                              onClick={() => {
-                                                close()
-                                                handleChangeRole(
-                                                  t.id,
-                                                  m.user_id,
-                                                  'deputy',
-                                                )
-                                              }}
-                                            >
-                                              <ShieldCheck size={15} /> Bổ nhiệm
-                                              phó nhóm
-                                            </button>
-                                          )}
-
+                              {role !== 'owner' && (
+                                <div className="member-tree-item-actions">
+                                  <Dropdown
+                                    label={`Thao tác với ${m.display_name}`}
+                                    className="action-dropdown member-action-dropdown"
+                                    trigger={<Ellipsis size={18} />}
+                                  >
+                                    {(close) => (
+                                      <>
+                                        {role === 'deputy' ? (
                                           <button
                                             type="button"
-                                            className="member-menu-item text-danger"
+                                            className="member-menu-item"
                                             onClick={() => {
                                               close()
-                                              handleRemoveFromTeam(t, m)
+                                              handleChangeRole(
+                                                t.id,
+                                                m.user_id,
+                                                'member',
+                                              )
                                             }}
                                           >
-                                            <Trash2 size={15} /> Gỡ khỏi nhóm này
+                                            <UserMinus size={15} /> Gỡ quyền phó
+                                            nhóm
                                           </button>
-                                        </>
-                                      )}
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            className="member-menu-item"
+                                            onClick={() => {
+                                              close()
+                                              handleChangeRole(
+                                                t.id,
+                                                m.user_id,
+                                                'deputy',
+                                              )
+                                            }}
+                                          >
+                                            <ShieldCheck size={15} /> Bổ nhiệm
+                                            phó nhóm
+                                          </button>
+                                        )}
 
-                                      <button
-                                        type="button"
-                                        className="member-menu-item"
-                                        onClick={() => {
-                                          close()
-                                          setEditingMember(m)
-                                        }}
-                                      >
-                                        <Pencil size={15} /> Sửa thông tin tài
-                                        khoản
-                                      </button>
-
-                                      {!isCurrentUser && (
                                         <button
                                           type="button"
-                                          className="member-menu-item member-menu-danger"
+                                          className="member-menu-item text-danger"
                                           onClick={() => {
                                             close()
-                                            setDeletingMember(m)
+                                            handleRemoveFromTeam(t, m)
                                           }}
                                         >
-                                          <Trash2 size={15} /> Xóa tài khoản hệ
-                                          thống
+                                          <Trash2 size={15} /> Gỡ khỏi nhóm này
                                         </button>
-                                      )}
-                                    </>
-                                  )}
-                                </Dropdown>
-                              </div>
+                                      </>
+                                    )}
+                                  </Dropdown>
+                                </div>
+                              )}
                             </div>
                           )
                         })}
@@ -1369,28 +1341,7 @@ export function GlobalMemberPanel({
                               >
                                 <FolderPlus size={15} /> Thêm vào nhóm…
                               </button>
-                              <button
-                                type="button"
-                                className="member-menu-item"
-                                onClick={() => {
-                                  close()
-                                  setEditingMember(m)
-                                }}
-                              >
-                                <Pencil size={15} /> Sửa thông tin
-                              </button>
-                              {!isCurrentUser && (
-                                <button
-                                  type="button"
-                                  className="member-menu-item member-menu-danger"
-                                  onClick={() => {
-                                    close()
-                                    setDeletingMember(m)
-                                  }}
-                                >
-                                  <Trash2 size={15} /> Xóa tài khoản
-                                </button>
-                              )}
+
                             </>
                           )}
                         </Dropdown>
