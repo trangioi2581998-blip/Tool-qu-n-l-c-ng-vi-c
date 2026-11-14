@@ -691,7 +691,7 @@ export function DepartmentPanel({
                         {deptMems.map((m) => {
                           const isCurrentUser = m.user_id === currentUserId
                           return (
-                            <div key={m.user_id} className="member-tree-item">
+                            <div key={m.user_id} className="member-tree-item dept-member-tree-item">
                               <div className="member-tree-item-user">
                                 <Avatar name={m.display_name} id={m.user_id} />
                                 <div className="member-tree-item-name-group">
@@ -825,7 +825,7 @@ export function DepartmentPanel({
                   <div className="member-tree-team-body">
                     <div className="member-tree-list">
                       {unassignedMembers.map((m) => (
-                        <div key={m.user_id} className="member-tree-item">
+                        <div key={m.user_id} className="member-tree-item dept-member-tree-item">
                           <div className="member-tree-item-user">
                             <Avatar name={m.display_name} id={m.user_id} />
                             <div className="member-tree-item-name-group">

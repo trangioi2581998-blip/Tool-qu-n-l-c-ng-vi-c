@@ -1008,7 +1008,7 @@ export function GlobalMemberPanel({
                           const role = m.role || 'member'
                           const isCurrentUser = m.user_id === currentUserId
                           return (
-                            <div key={m.user_id} className="member-tree-item">
+                            <div key={m.user_id} className="member-tree-item project-member-tree-item">
                               <div className="member-tree-item-user">
                                 <Avatar name={m.display_name} id={m.user_id} />
                                 <div className="member-tree-item-name-group">

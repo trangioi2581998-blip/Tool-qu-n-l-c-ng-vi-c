@@ -6325,60 +6325,172 @@ h3 {
   margin-left: auto;
 }
 
-/* Định dạng lưới chuẩn hàng ngang cho Quản lý all dự án */
-.global-member-panel .member-tree-item {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.8fr) minmax(180px, 1.2fr) minmax(140px, 1fr) 36px;
-  align-items: center;
+/* 1. Dòng nhân sự trong Quản lý phòng ban */
+.dept-member-tree-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   gap: 16px;
+  position: relative;
 }
-.global-member-panel .member-tree-item-user {
-  flex: none;
-  width: auto;
-  min-width: 0;
+.dept-member-tree-item .member-tree-item-user {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
 }
-.global-member-panel .member-tree-item-dept {
-  flex: none;
-  width: auto;
-  min-width: 0;
-}
-.global-member-panel .member-tree-item-role {
-  flex: none;
-  width: auto;
-  min-width: 0;
-}
-.global-member-panel .member-tree-item-actions {
-  flex: none;
-  width: 36px;
-  min-width: 36px;
-  height: 32px;
-  margin-left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+.dept-member-tree-item .member-tree-item-actions {
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
 }
 
+/* 2. Dòng thành viên trong Quản lý all dự án */
+.project-member-tree-item {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1.8fr) minmax(180px, 1.2fr) minmax(140px, 1fr) 36px !important;
+  align-items: center !important;
+  gap: 16px;
+  position: relative;
+}
+.project-member-tree-item .member-tree-item-user {
+  flex: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+.project-member-tree-item .member-tree-item-dept {
+  flex: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+.project-member-tree-item .member-tree-item-role {
+  flex: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+.project-member-tree-item .member-tree-item-actions {
+  flex: none !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 32px !important;
+  margin-left: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+/* 3. Responsive Mobile tối ưu cho cả Phòng ban & Dự án (<= 768px) */
 @media (max-width: 768px) {
-  .global-member-panel .member-tree-item {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+  /* Ẩn chữ trên các nút desktop để chuyển thành icon button nhỏ gọn */
+  .btn-label-desktop {
+    display: none !important;
   }
+
+  /* Header card của phòng ban và dự án */
+  .member-tree-team-header {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  .tree-collapse-btn {
+    width: 26px !important;
+    height: 26px !important;
+    flex-shrink: 0 !important;
+  }
+  .member-tree-team-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .member-tree-team-icon {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0 !important;
+  }
+  .member-tree-team-title h3 {
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 140px !important;
+  }
+  .member-tree-count-pill {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  .member-tree-team-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+  .member-tree-team-actions .button {
+    padding: 5px 8px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    font-size: 12px !important;
+  }
+
+  /* Card body */
   .member-tree-team-body {
-    padding-left: 18px;
+    padding: 10px 12px 14px 16px !important;
   }
   .member-tree-team-body::before,
   .member-tree-item::before {
-    display: none;
+    display: none !important;
   }
-  .member-tree-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px;
+
+  /* Mobile cho từng thành viên dự án */
+  .project-member-tree-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    position: relative !important;
   }
-  .member-tree-item-actions {
-    align-self: flex-end;
+  .project-member-tree-item .member-tree-item-user {
+    padding-right: 36px !important;
+  }
+  .project-member-tree-item .member-tree-item-dept,
+  .project-member-tree-item .member-tree-item-role {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .project-member-tree-item .member-tree-item-actions {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    margin: 0 !important;
+  }
+
+  /* Mobile cho từng nhân sự phòng ban */
+  .dept-member-tree-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 12px !important;
+  }
+  .dept-member-tree-item .member-tree-item-user {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    padding-right: 8px !important;
+  }
+  .dept-member-tree-item .member-tree-item-actions {
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
   }
 }
 /* ==========================================================================
