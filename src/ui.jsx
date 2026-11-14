@@ -117,6 +117,12 @@ export function readableError(error) {
     error?.code === 'PGRST202'
   )
     return 'Chưa tìm thấy cấu trúc dữ liệu. Hãy chạy migration trong SQL Editor của Supabase.'
+  if (
+    error?.message?.includes('row-level security policy') ||
+    error?.code === 'AccessDenied' ||
+    error?.statusCode === '403'
+  )
+    return 'Lỗi phân quyền Supabase Storage (RLS). Cần cập nhật Storage Policy trong Supabase SQL Editor.'
   if (error?.code === '42501')
     return 'Tài khoản hiện tại không có quyền thực hiện thao tác này.'
   if (error?.code === '23503' && error.message.includes('work_tasks_parent_fk'))
