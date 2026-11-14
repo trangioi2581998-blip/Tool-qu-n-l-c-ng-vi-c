@@ -1935,6 +1935,7 @@ export default function App({
                 onEditTeam={onEditTeam}
                 notify={notify}
                 onSwitchTeam={switchTeam}
+                onNavigateToDepartments={() => setView({ kind: 'departments' })}
               />
             ) : (
               <div
@@ -2068,9 +2069,14 @@ export default function App({
           repo={repo}
           onClose={() => setModal(null)}
           onAdded={memberCreated}
-          onOpenCreateDirectoryMember={() =>
-            setModal({ type: 'create-directory-member' })
-          }
+          onNavigateToDepartments={() => {
+            setModal(null)
+            setView({ kind: 'departments' })
+          }}
+          onOpenCreateDirectoryMember={() => {
+            setModal(null)
+            setView({ kind: 'departments' })
+          }}
         />
       )}
       {modal?.type === 'create-directory-member' && (

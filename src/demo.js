@@ -1176,29 +1176,17 @@ export function createDemo(userId, onAccounts) {
       const currentTeamMemberIds = new Set(
         (state.members[currentTeamId] || []).map((m) => m.user_id),
       )
-      const all = []
-      for (const acc of demoAccounts()) {
-        all.push({
-          user_id: acc.id,
-          display_name: acc.name,
-          email: acc.email,
-          department: acc.department || '',
-        })
-      }
-      for (const teamMembers of Object.values(state.members || {})) {
-        for (const m of teamMembers) {
-          all.push({
-            user_id: m.user_id,
-            display_name: m.display_name,
-            email: m.email,
+      const allMembers = await this.listAllMembers()
+      const map = new Map()
+      for (const m of allMembers) {
+        const uid = m.user_id || m.id
+        if (uid && !currentTeamMemberIds.has(uid) && !map.has(uid)) {
+          map.set(uid, {
+            user_id: uid,
+            display_name: m.display_name || m.name || '',
+            email: m.email || '',
             department: m.department || '',
           })
-        }
-      }
-      const map = new Map()
-      for (const m of all) {
-        if (m.user_id && !currentTeamMemberIds.has(m.user_id) && !map.has(m.user_id)) {
-          map.set(m.user_id, m)
         }
       }
       return Array.from(map.values())

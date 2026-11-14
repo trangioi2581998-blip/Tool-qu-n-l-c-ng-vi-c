@@ -48,6 +48,7 @@ export function AddTeamMemberDialog({
   onClose,
   onAdded,
   onOpenCreateDirectoryMember,
+  onNavigateToDepartments,
 }) {
   const [availableMembers, setAvailableMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -136,10 +137,19 @@ export function AddTeamMemberDialog({
     }
   }
 
+  const handleGoToDepartments = () => {
+    onClose()
+    if (onNavigateToDepartments) {
+      onNavigateToDepartments()
+    } else if (onOpenCreateDirectoryMember) {
+      onOpenCreateDirectoryMember()
+    }
+  }
+
   return (
     <Dialog
       title={`Thêm thành viên vào dự án "${team?.name || ''}"`}
-      description="Chọn thành viên từ danh bạ Thành viên chung để thêm vào dự án này."
+      description="Chọn nhân sự từ Quản lý phòng ban để thêm vào dự án này."
       wide
       fullMobile
       onClose={() => {
@@ -200,28 +210,25 @@ export function AddTeamMemberDialog({
         <div className="existing-member-list">
           {loading ? (
             <div className="existing-member-loading">
-              <RefreshCw size={18} className="spin" /> Đang tải danh sách thành viên...
+              <RefreshCw size={18} className="spin" /> Đang tải danh sách nhân sự...
             </div>
           ) : filteredMembers.length === 0 ? (
             <div className="existing-member-empty">
               {availableMembers.length === 0 ? (
                 <>
-                  <p>Tất cả thành viên trong hệ thống đã có mặt trong dự án này.</p>
-                  {onOpenCreateDirectoryMember && (
+                  <p>Tất cả nhân sự trong các phòng ban đã có mặt trong dự án này.</p>
+                  {(onNavigateToDepartments || onOpenCreateDirectoryMember) && (
                     <button
                       type="button"
                       className="button secondary sm"
-                      onClick={() => {
-                        onClose()
-                        onOpenCreateDirectoryMember()
-                      }}
+                      onClick={handleGoToDepartments}
                     >
-                      <UserPlus size={14} /> Tạo thêm tài khoản ở Thành viên chung
+                      <UserPlus size={14} /> Thêm nhân sự ở Quản lý phòng ban
                     </button>
                   )}
                 </>
               ) : (
-                <p>Không tìm thấy thành viên phù hợp với từ khóa "{search}".</p>
+                <p>Không tìm thấy nhân sự phù hợp với từ khóa "{search}".</p>
               )}
             </div>
           ) : (
@@ -243,9 +250,9 @@ export function AddTeamMemberDialog({
                   <div className="existing-member-info">
                     <div className="existing-member-name-row">
                       <span className="existing-member-name">{m.display_name}</span>
-                      {m.department && (
-                        <span className="existing-member-dept">{m.department}</span>
-                      )}
+                      <span className="existing-member-dept">
+                        Phòng ban: {m.department || 'Chưa phân phòng'}
+                      </span>
                     </div>
                     <span className="existing-member-email">{m.email}</span>
                   </div>
@@ -255,18 +262,15 @@ export function AddTeamMemberDialog({
           )}
         </div>
 
-        {onOpenCreateDirectoryMember && (
+        {(onNavigateToDepartments || onOpenCreateDirectoryMember) && (
           <div className="existing-member-footer-hint">
-            <span>Chưa có tài khoản trong danh sách? </span>
+            <span>Chưa có nhân sự trong danh sách? </span>
             <button
               type="button"
               className="text-link"
-              onClick={() => {
-                onClose()
-                onOpenCreateDirectoryMember()
-              }}
+              onClick={handleGoToDepartments}
             >
-              + Tạo tài khoản ở Thành viên chung
+              + Thêm nhân sự ở Quản lý phòng ban
             </button>
           </div>
         )}
@@ -769,6 +773,7 @@ export function GlobalMemberPanel({
   onEditTeam,
   notify,
   onSwitchTeam,
+  onNavigateToDepartments,
 }) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1443,7 +1448,8 @@ export function GlobalMemberPanel({
             reload()
             notify(`Đã thêm thành viên vào nhóm "${addingToTeam.name}".`)
           }}
-          onOpenCreateDirectoryMember={onOpenCreate}
+          onNavigateToDepartments={onNavigateToDepartments}
+          onOpenCreateDirectoryMember={onNavigateToDepartments || onOpenCreate}
         />
       )}
 

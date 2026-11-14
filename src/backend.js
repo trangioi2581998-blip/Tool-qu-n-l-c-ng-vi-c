@@ -670,6 +670,31 @@ export function createBackend(authUser) {
     },
     async listAvailableMembers(currentTeamId) {
       const all = []
+
+      // 1. Lấy toàn bộ nhân sự từ Quản lý phòng ban (work_directory_members)
+      try {
+        const { data, error } = await client
+          .from('work_directory_members')
+          .select('user_id,display_name,email,department')
+          .order('display_name')
+        if (!error && Array.isArray(data)) {
+          all.push(...data)
+        }
+      } catch (e) {
+        console.warn('Query work_directory_members for available members:', e)
+      }
+
+      // 2. Lấy thêm từ listAllMembers
+      try {
+        if (typeof this.listAllMembers === 'function') {
+          const allMems = await this.listAllMembers()
+          if (Array.isArray(allMems)) {
+            all.push(...allMems)
+          }
+        }
+      } catch (e) {}
+
+      // 3. Dự phòng từ work_members
       try {
         const { data, error } = await client
           .from('work_members')
@@ -711,13 +736,21 @@ export function createBackend(authUser) {
 
       const map = new Map()
       for (const m of all) {
-        if (m.user_id && !currentMemberIds.has(m.user_id) && !map.has(m.user_id)) {
-          map.set(m.user_id, {
-            user_id: m.user_id,
-            display_name: m.display_name,
-            email: m.email,
-            department: m.department || '',
-          })
+        const uid = m.user_id || m.id
+        if (uid && !currentMemberIds.has(uid)) {
+          if (!map.has(uid)) {
+            map.set(uid, {
+              user_id: uid,
+              display_name: m.display_name || m.name || '',
+              email: m.email || '',
+              department: m.department || '',
+            })
+          } else {
+            const cur = map.get(uid)
+            if (!cur.department && m.department) {
+              cur.department = m.department
+            }
+          }
         }
       }
       return Array.from(map.values())

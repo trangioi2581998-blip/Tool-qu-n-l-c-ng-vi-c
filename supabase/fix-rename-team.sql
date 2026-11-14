@@ -52,3 +52,4 @@ create policy work_teams_delete on public.work_teams
   using (true);
 
 notify pgrst, 'reload schema';
+
