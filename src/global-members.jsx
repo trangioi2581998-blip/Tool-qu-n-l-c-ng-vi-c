@@ -689,7 +689,8 @@ export function DeleteDirectoryMemberDialog({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleConfirm() {
+  async function handleConfirm(e) {
+    e?.preventDefault?.()
     setBusy(true)
     setError('')
     try {
@@ -709,17 +710,31 @@ export function DeleteDirectoryMemberDialog({
         if (!busy) onClose()
       }}
     >
-      <div className="dialog-body">
-        <p>
+      <form className="dialog-form" onSubmit={handleConfirm}>
+        <p style={{ margin: 0, fontSize: '13.5px', lineHeight: '1.6', color: '#332d46' }}>
           Bạn có chắc chắn muốn xóa tài khoản <strong>"{member.display_name}"</strong> ({member.email}) khỏi hệ thống?
         </p>
-        <div className="callout callout-danger" style={{ marginTop: 12 }}>
-          <p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            background: '#fef2f2',
+            border: '1px solid #fee2e2',
+            borderRadius: '9px',
+            padding: '12px 14px',
+            fontSize: '12.5px',
+            lineHeight: '1.55',
+            color: '#991b1b',
+          }}
+        >
+          <Trash2 size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#dc2626' }} />
+          <div>
             Tài khoản này sẽ bị xóa khỏi danh bạ chung và gỡ bỏ khỏi tất cả các dự án đang tham gia.
-          </p>
+          </div>
         </div>
         <ErrorText message={error} />
-        <div className="form-actions" style={{ marginTop: 20 }}>
+        <div className="form-actions" style={{ marginTop: '8px' }}>
           <button
             type="button"
             className="button secondary"
@@ -729,16 +744,15 @@ export function DeleteDirectoryMemberDialog({
             Hủy
           </button>
           <button
-            type="button"
+            type="submit"
             className="button danger"
-            onClick={handleConfirm}
             disabled={busy}
           >
             <Trash2 size={16} />
             {busy ? 'Đang xóa…' : 'Xác nhận xóa'}
           </button>
         </div>
-      </div>
+      </form>
     </Dialog>
   )
 }

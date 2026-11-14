@@ -2690,6 +2690,7 @@ h3 {
   height: 29px;
 }
 .dialog-form,
+.dialog-body,
 .auth-form {
   padding: 14px 16px;
   display: grid;
