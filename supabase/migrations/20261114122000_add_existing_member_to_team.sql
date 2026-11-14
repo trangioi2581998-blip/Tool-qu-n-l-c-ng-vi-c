@@ -103,3 +103,4 @@ drop policy if exists "work_members_update_policy" on public.work_members;
 create policy "work_members_update_policy" on public.work_members
 for update to authenticated
 using (nhip_viec_private.is_member(team_id, true));
+

@@ -1260,17 +1260,144 @@ export function createDemo(userId, onAccounts) {
     },
     async removeMember(team, userId) {
       if (membership(team.id)?.role !== 'owner')
-        throw new Error('Chỉ trưởng nhóm có thể xóa thành viên.')
+        throw new Error('Chỉ trưởng nhóm có thể xóa thành viên khỏi nhóm.')
       if (userId === user.id)
         throw new Error('Không thể xóa tài khoản trưởng nhóm đang đăng nhập.')
       state.members[team.id] = (state.members[team.id] ?? []).filter(
         (item) => item.user_id !== userId,
       )
-      state.accounts = (state.accounts ?? []).filter(
-        (item) => item.id !== userId,
-      )
       for (const task of state.tasks) {
         if (task.team_id === team.id && task.assignee_ids.includes(userId)) {
+          task.assignee_ids = task.assignee_ids.filter((id) => id !== userId)
+        }
+      }
+      save()
+    },
+    async listAllMembers() {
+      const teamMap = new Map((state.teams || []).map((t) => [t.id, t.name]))
+      const map = new Map()
+
+      for (const acc of demoAccounts()) {
+        map.set(acc.id, {
+          user_id: acc.id,
+          display_name: acc.name,
+          email: acc.email,
+          department: acc.department || '',
+          teams: [],
+        })
+      }
+
+      for (const [tId, memList] of Object.entries(state.members || {})) {
+        for (const m of memList) {
+          if (!map.has(m.user_id)) {
+            map.set(m.user_id, {
+              user_id: m.user_id,
+              display_name: m.display_name,
+              email: m.email,
+              department: m.department || '',
+              teams: [],
+            })
+          }
+          const item = map.get(m.user_id)
+          if (!item.teams.some((t) => t.id === tId)) {
+            item.teams.push({
+              id: tId,
+              name: teamMap.get(tId) || 'Dự án',
+              role: m.role || 'member',
+            })
+          }
+        }
+      }
+
+      return Array.from(map.values())
+    },
+    async createDirectoryMember(fields) {
+      const name = (fields.display_name || fields.name || '').trim()
+      const email = (fields.email || '').trim().toLowerCase()
+      const password = fields.password || '123456'
+      const department = (fields.department || '').trim()
+
+      if (!name || !email) {
+        throw new Error('Vui lòng nhập họ tên và email.')
+      }
+
+      const existing = demoAccounts().find((a) => a.email.toLowerCase() === email)
+      if (existing) {
+        throw new Error('Email này đã tồn tại trong danh sách thành viên.')
+      }
+
+      const newId = crypto.randomUUID()
+      const newAcc = {
+        id: newId,
+        name,
+        email,
+        password,
+        department,
+      }
+      state.accounts.push(newAcc)
+
+      if (fields.teamId) {
+        state.members[fields.teamId] = state.members[fields.teamId] || []
+        state.members[fields.teamId].push({
+          user_id: newId,
+          display_name: name,
+          email,
+          department,
+          role: fields.role || 'member',
+        })
+      }
+
+      save()
+      onAccounts(demoAccounts())
+      return {
+        user_id: newId,
+        display_name: name,
+        email,
+        department,
+        teams: fields.teamId
+          ? [{ id: fields.teamId, role: fields.role || 'member' }]
+          : [],
+      }
+    },
+    async updateDirectoryMember(userId, fields) {
+      const acc = state.accounts.find((a) => a.id === userId)
+      if (acc) {
+        if (fields.display_name || fields.name)
+          acc.name = (fields.display_name || fields.name).trim()
+        if (fields.email) acc.email = fields.email.trim().toLowerCase()
+        if (fields.department !== undefined)
+          acc.department = (fields.department || '').trim()
+        if (fields.password) acc.password = fields.password
+      }
+      for (const list of Object.values(state.members || {})) {
+        const mem = list.find((m) => m.user_id === userId)
+        if (mem) {
+          if (fields.display_name || fields.name)
+            mem.display_name = (fields.display_name || fields.name).trim()
+          if (fields.email) mem.email = fields.email.trim().toLowerCase()
+          if (fields.department !== undefined)
+            mem.department = (fields.department || '').trim()
+        }
+      }
+      save()
+      onAccounts(demoAccounts())
+      return {
+        user_id: userId,
+        display_name: fields.display_name || fields.name,
+        email: fields.email,
+        department: fields.department || '',
+      }
+    },
+    async deleteDirectoryMember(userId) {
+      if (userId === user.id) {
+        throw new Error('Không thể tự xóa tài khoản của chính mình.')
+      }
+      state.accounts = (state.accounts ?? []).filter((a) => a.id !== userId)
+      for (const [tId, list] of Object.entries(state.members || {})) {
+        state.members[tId] = list.filter((m) => m.user_id !== userId)
+      }
+      for (const task of state.tasks) {
+        if (task.assignee_ids.includes(userId)) {
           task.assignee_ids = task.assignee_ids.filter((id) => id !== userId)
         }
       }

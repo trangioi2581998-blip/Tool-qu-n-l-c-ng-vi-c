@@ -26,7 +26,9 @@ import {
   SlidersHorizontal,
   Trash2,
   UserMinus,
+  UserPlus,
   UserRoundPlus,
+  Users,
   UsersRound,
   X,
 } from 'lucide-react'
@@ -46,6 +48,11 @@ import {
   TransferOwnerDialog,
 } from './dialogs.jsx'
 import { AccountDialog, EmailDemoDialog } from './workflow.jsx'
+import {
+  AddTeamMemberDialog,
+  CreateDirectoryMemberDialog,
+  GlobalMemberPanel,
+} from './global-members.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
 import { uploadTaskAttachments } from './attachments.js'
 import { TeamChatPanel } from './team-chat.jsx'
@@ -92,7 +99,7 @@ const dates = {
   late: 'Quá hạn',
   extension: 'Yêu cầu gia hạn',
 }
-const pages = {
+const projectPages = {
   mine: {
     title: 'Việc của tôi',
     Icon: ListTodo,
@@ -120,11 +127,21 @@ const pages = {
     description: 'Trao đổi, thảo luận trực tiếp giữa các thành viên trong nhóm.',
   },
   members: {
-    title: 'Thành viên',
+    title: 'Thành viên dự án',
     Icon: UsersRound,
-    description: 'Xem ai đang làm việc trong nhóm và mời thêm đồng đội.',
+    description: 'Xem ai đang làm việc trong dự án và thêm nhân sự từ danh sách chung.',
   },
 }
+
+const commonPages = {
+  allMembers: {
+    title: 'Thành viên chung',
+    Icon: Users,
+    description: 'Quản lý toàn bộ danh sách thành viên và nhân sự trong tổ chức.',
+  },
+}
+
+const pages = { ...projectPages, ...commonPages }
 
 function Sidebar({
   repo,
@@ -247,8 +264,22 @@ function Sidebar({
         </Dropdown>
         <nav aria-label="Điều hướng chính">
           <div className="sidebar-section">
-            <p>KHÔNG GIAN</p>
-            {Object.entries(pages).map(([key, { title, Icon }]) => (
+            <p>{team ? `DỰ ÁN • ${team.name}` : 'KHÔNG GIAN CÁ NHÂN'}</p>
+            {Object.entries(projectPages).map(([key, { title, Icon }]) => (
+              <button
+                className={'nav-item' + (view.kind === key ? ' active' : '')}
+                key={key}
+                onClick={() => onNav(key)}
+                aria-current={view.kind === key ? 'page' : undefined}
+              >
+                <Icon size={18} strokeWidth={1.9} />
+                <span>{title}</span>
+              </button>
+            ))}
+          </div>
+          <div className="sidebar-section">
+            <p>QUẢN LÝ CHUNG</p>
+            {Object.entries(commonPages).map(([key, { title, Icon }]) => (
               <button
                 className={'nav-item' + (view.kind === key ? ' active' : '')}
                 key={key}
@@ -918,6 +949,14 @@ export default function App({
     setModal({ type: 'task', task, ...options })
   const onCreate = (type) => {
     setMobileNav(false)
+    if (type === 'account') {
+      if (view.kind === 'members') {
+        setModal({ type: 'add-team-member' })
+      } else {
+        setModal({ type: 'create-directory-member' })
+      }
+      return
+    }
     setModal({ type })
   }
   const onInvite = () => onCreate('invite')
@@ -1483,12 +1522,18 @@ export default function App({
             >
               <Menu size={21} />
             </IconButton>
-            <span>{team?.name || 'Không gian cá nhân'}</span>
+            <span>
+              {view.kind === 'allMembers'
+                ? 'Quản lý chung'
+                : team?.name || 'Không gian cá nhân'}
+            </span>
             <ChevronRight size={15} />
             <strong>{pageTitle}</strong>
           </div>
           <div className="top-actions">
-            {view.kind !== 'members' && view.kind !== 'chat' && (
+            {view.kind !== 'members' &&
+              view.kind !== 'chat' &&
+              view.kind !== 'allMembers' && (
               <div className="search-box">
                 <Search size={17} />
                 <input
@@ -1614,11 +1659,20 @@ export default function App({
                     isOwner && (
                       <button
                         className="button hero-primary"
-                        onClick={onCreateAccount}
+                        onClick={() => setModal({ type: 'add-team-member' })}
                       >
-                        <UserRoundPlus size={18} /> Thêm thành viên
+                        <UserPlus size={18} /> Thêm thành viên vào dự án
                       </button>
                     )
+                  ) : view.kind === 'allMembers' ? (
+                    <button
+                      className="button hero-primary"
+                      onClick={() =>
+                        setModal({ type: 'create-directory-member' })
+                      }
+                    >
+                      <UserRoundPlus size={18} /> Tạo tài khoản mới
+                    </button>
                   ) : view.kind === 'reports' ? (
                     <>
                       <button
@@ -1843,6 +1897,18 @@ export default function App({
               onCreate={() => onCreate('team')}
             />
           )}
+          {view.kind === 'allMembers' && (
+            <GlobalMemberPanel
+              repo={repo}
+              teams={teams}
+              currentUserId={repo.user.id}
+              onOpenCreate={() =>
+                setModal({ type: 'create-directory-member' })
+              }
+              notify={notify}
+              onSwitchTeam={switchTeam}
+            />
+          )}
         </main>
       </div>
       {modal?.type === 'task' && (
@@ -1911,6 +1977,39 @@ export default function App({
       )}
       {modal?.type === 'invite' && team && (
         <InviteDialog {...{ repo, team }} onClose={() => setModal(null)} />
+      )}
+      {modal?.type === 'add-team-member' && team && (
+        <AddTeamMemberDialog
+          team={team}
+          repo={repo}
+          onClose={() => setModal(null)}
+          onAdded={memberCreated}
+          onOpenCreateDirectoryMember={() =>
+            setModal({ type: 'create-directory-member' })
+          }
+        />
+      )}
+      {modal?.type === 'create-directory-member' && (
+        <CreateDirectoryMemberDialog
+          repo={repo}
+          teams={teams}
+          currentTeam={team}
+          onClose={() => setModal(null)}
+          onCreated={(created) => {
+            setModal(null)
+            notify(`Đã tạo tài khoản cho "${created.display_name}".`)
+            if (
+              created.initial_team === team?.id ||
+              (created.teamId && created.teamId === team?.id) ||
+              (created.teams && created.teams.some((t) => t.id === team?.id))
+            ) {
+              patchSnapshot((cur) => ({
+                ...cur,
+                members: [...cur.members, created],
+              }))
+            }
+          }}
+        />
       )}
       {modal?.type === 'account' && team && isOwner && (
         <AccountDialog

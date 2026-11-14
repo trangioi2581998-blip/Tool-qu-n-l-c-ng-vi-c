@@ -5858,3 +5858,140 @@ h3 {
     flex: 1;
   }
 }
+
+/* ==========================================================================
+   Global Member Panel (Thành viên chung)
+   ========================================================================== */
+.global-member-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.global-member-search {
+  flex: 1;
+  min-width: 260px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.global-member-search .search-icon {
+  position: absolute;
+  left: 12px;
+  color: #8b8599;
+  pointer-events: none;
+}
+.global-member-search input {
+  width: 100%;
+  padding-left: 36px !important;
+  padding-right: 32px !important;
+  height: 38px !important;
+  font-size: 13.5px !important;
+  border-radius: 8px !important;
+}
+.global-member-search .clear-search {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #8b8599;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+.global-member-search .clear-search:hover {
+  color: #333;
+  background: #ede9f6;
+}
+.global-member-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.global-member-filters select {
+  height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+  background: white;
+}
+.global-member-count-bar {
+  font-size: 12.5px;
+  color: #6c637a;
+  margin-bottom: 14px;
+}
+.global-member-count-bar strong {
+  color: var(--purple-dark, #4f46e5);
+}
+.global-member-teams-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.global-team-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1edfa;
+  border: 1px solid #e2d9f3;
+  color: #55447a;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.global-team-badge:hover {
+  background: #e6ddf8;
+  border-color: #c9b8ef;
+  color: var(--purple-dark, #4f46e5);
+}
+.global-team-badge small {
+  font-size: 10.5px;
+  color: #7b6f98;
+}
+.existing-member-footer-hint {
+  padding: 8px 12px;
+  background: #faf8fd;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #635b73;
+  text-align: center;
+  margin-top: 4px;
+}
+.existing-member-footer-hint .text-link {
+  background: transparent;
+  border: none;
+  color: var(--purple, #6366f1);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: 4px;
+}
+.existing-member-footer-hint .text-link:hover {
+  color: var(--purple-dark, #4f46e5);
+}
+.form-row-group {
+  display: flex;
+  gap: 12px;
+}
+.form-row-group > * {
+  flex: 1;
+}
+.callout {
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.callout-danger {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+}

@@ -777,6 +777,178 @@ export function createBackend(authUser) {
       )
       void dispatchPendingEmails()
     },
+    async listAllMembers() {
+      // 1. Thử gọi RPC work_list_all_members
+      try {
+        const res = await client.rpc('work_list_all_members')
+        if (!res.error && Array.isArray(res.data)) {
+          return res.data
+        }
+      } catch (err) {
+        console.warn('RPC work_list_all_members failed, falling back:', err)
+      }
+
+      // 2. Dự phòng: Truy vấn từ work_directory_members & work_members
+      const map = new Map()
+      try {
+        const { data: dirList } = await client
+          .from('work_directory_members')
+          .select('user_id,display_name,email,department,created_at')
+        if (Array.isArray(dirList)) {
+          for (const m of dirList) {
+            map.set(m.user_id, {
+              user_id: m.user_id,
+              display_name: m.display_name,
+              email: m.email,
+              department: m.department || '',
+              teams: [],
+            })
+          }
+        }
+      } catch {}
+
+      try {
+        const { data: memList } = await client
+          .from('work_members')
+          .select('user_id,display_name,email,department,role,team_id')
+        const { data: teamList } = await client
+          .from('work_teams')
+          .select('id,name')
+        const teamMap = new Map((teamList || []).map((t) => [t.id, t.name]))
+
+        if (Array.isArray(memList)) {
+          for (const m of memList) {
+            if (!map.has(m.user_id)) {
+              map.set(m.user_id, {
+                user_id: m.user_id,
+                display_name: m.display_name,
+                email: m.email,
+                department: m.department || '',
+                teams: [],
+              })
+            }
+            const existing = map.get(m.user_id)
+            if (m.team_id && !existing.teams.some((t) => t.id === m.team_id)) {
+              existing.teams.push({
+                id: m.team_id,
+                name: teamMap.get(m.team_id) || 'Dự án',
+                role: m.role || 'member',
+              })
+            }
+          }
+        }
+      } catch {}
+
+      return Array.from(map.values())
+    },
+    async createDirectoryMember(fields) {
+      const name = (fields.display_name || fields.name || '').trim()
+      const email = (fields.email || '').trim().toLowerCase()
+      const password = fields.password || '123456'
+      const department = (fields.department || '').trim()
+      const initialTeam = fields.teamId || null
+      const initialRole = fields.role || 'member'
+
+      try {
+        const res = await client.rpc('work_create_directory_member', {
+          member_name: name,
+          member_email: email,
+          member_password: password,
+          member_department: department,
+          initial_team: initialTeam,
+          initial_role: initialRole,
+        })
+        if (!res.error && res.data) {
+          void dispatchPendingEmails()
+          return res.data
+        }
+      } catch (err) {
+        console.warn('work_create_directory_member RPC error:', err)
+      }
+
+      // Fallback
+      try {
+        const { data } = await client
+          .from('work_directory_members')
+          .insert({
+            user_id: crypto.randomUUID(),
+            display_name: name,
+            email,
+            department,
+          })
+          .select()
+          .single()
+        if (data) return data
+      } catch {}
+
+      return {
+        user_id: crypto.randomUUID(),
+        display_name: name,
+        email,
+        department,
+        teams: [],
+      }
+    },
+    async updateDirectoryMember(userId, fields) {
+      try {
+        const res = await client.rpc('work_update_directory_member', {
+          target_user: userId,
+          new_name: fields.display_name || fields.name,
+          new_email: fields.email,
+          new_dept: fields.department || '',
+          new_password: fields.password || '',
+        })
+        if (!res.error && res.data) {
+          return res.data
+        }
+      } catch (err) {
+        console.warn('work_update_directory_member RPC error:', err)
+      }
+
+      try {
+        await client
+          .from('work_directory_members')
+          .update({
+            display_name: fields.display_name || fields.name,
+            email: fields.email,
+            department: fields.department || '',
+          })
+          .eq('user_id', userId)
+      } catch {}
+
+      try {
+        await client
+          .from('work_members')
+          .update({
+            display_name: fields.display_name || fields.name,
+            email: fields.email,
+            department: fields.department || '',
+          })
+          .eq('user_id', userId)
+      } catch {}
+
+      return {
+        user_id: userId,
+        display_name: fields.display_name || fields.name,
+        email: fields.email,
+        department: fields.department || '',
+      }
+    },
+    async deleteDirectoryMember(userId) {
+      try {
+        const res = await client.rpc('work_delete_directory_member', {
+          target_user: userId,
+        })
+        if (!res.error) return
+      } catch (err) {
+        console.warn('work_delete_directory_member RPC error:', err)
+      }
+
+      try {
+        await client.from('work_members').delete().eq('user_id', userId)
+        await client.from('work_directory_members').delete().eq('user_id', userId)
+      } catch {}
+    },
     async signOut() {
       result(await client.auth.signOut())
     },
