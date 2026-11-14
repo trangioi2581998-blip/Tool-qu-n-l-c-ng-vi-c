@@ -140,11 +140,11 @@ function buildHtmlEmail({ subject, body, actionUrl, recipientName }) {
 
 function sendBatchViaSmtp(settings, messages) {
   return new Promise((resolve) => {
-    const cleanHost = String(settings?.smtp_host || 'smtp.gmail.com').trim()
-    const cleanPort = Number(settings?.smtp_port) || 465
-    const cleanUser = String(settings?.smtp_user || '').trim()
-    const cleanPass = String(settings?.smtp_pass || '').replace(/\s+/g, '')
-    const fromEmail = String(settings?.sender_email || cleanUser).trim()
+    const cleanHost = String(settings?.smtp_host || process.env.SMTP_HOST || 'smtp.gmail.com').trim()
+    const cleanPort = Number(settings?.smtp_port || process.env.SMTP_PORT) || 465
+    const cleanUser = String(settings?.smtp_user || process.env.SMTP_USER || 'trangioi2581998@gmail.com').trim()
+    const cleanPass = String(settings?.smtp_pass || process.env.SMTP_PASS || 'xkohhtdyyqcohbjm').replace(/\s+/g, '')
+    const fromEmail = String(settings?.sender_email || cleanUser || 'trangioi2581998@gmail.com').trim()
     const fromName = String(settings?.sender_name || 'Nhịp việc').trim()
 
     if (!cleanUser || !cleanPass) {

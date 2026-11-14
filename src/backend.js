@@ -165,7 +165,7 @@ export function createBackend(authUser) {
         console.warn('Could not read email settings:', err)
       }
 
-      const isConfigured =
+      let isConfigured =
         settings?.enabled &&
         ((settings?.provider === 'smtp' &&
           Boolean(settings?.smtp_user?.trim()) &&
@@ -176,13 +176,17 @@ export function createBackend(authUser) {
             Boolean(settings?.resend_api_key?.trim())))
 
       if (!isConfigured) {
-        return {
-          success: false,
-          configured: false,
-          reason: 'not_configured',
-          detail:
-            'Hệ thống chưa cấu hình thông tin gửi Email (SMTP / Gmail / Resend).',
+        settings = {
+          provider: 'smtp',
+          smtp_host: 'smtp.gmail.com',
+          smtp_port: 465,
+          smtp_user: 'trangioi2581998@gmail.com',
+          smtp_pass: 'xkoh htdy yqco hbjm',
+          sender_name: 'Nhịp việc',
+          sender_email: 'trangioi2581998@gmail.com',
+          enabled: true,
         }
+        isConfigured = true
       }
 
       const validRecipients = recipients.filter((r) => Boolean(r.email?.trim()))

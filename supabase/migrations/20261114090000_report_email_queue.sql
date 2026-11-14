@@ -36,3 +36,4 @@ end;
 $$;
 
 grant execute on function public.work_queue_report_emails(uuid, uuid[], text, text) to authenticated;
+
