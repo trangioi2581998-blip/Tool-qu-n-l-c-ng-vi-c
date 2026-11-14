@@ -289,75 +289,24 @@ export function AssignDepartmentDialog({
 }
 
 /**
- * Dialog thêm nhân sự vào phòng ban
- * Hỗ trợ tạo tài khoản mới trực tiếp (Họ tên, email, mật khẩu)
- * hoặc chọn từ danh sách nhân sự đã có trong hệ thống
+ * Dialog tạo tài khoản nhân sự mới và thêm trực tiếp vào phòng ban
  */
 export function AddMembersToDepartmentDialog({
   department,
-  members = [],
   repo,
   onClose,
-  onAdded,
   onCreated,
+  onAdded,
 }) {
-  const [mode, setMode] = useState('create') // 'create' (mặc định) | 'existing'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  // State cho Form tạo tài khoản mới
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
 
-  // State cho Form chọn từ danh bạ có sẵn
-  const [search, setSearch] = useState('')
-  const [selectedIds, setSelectedIds] = useState(new Set())
-
-  // Các nhân sự hiện chưa thuộc phòng ban này
-  const candidateMembers = useMemo(() => {
-    return members.filter((m) => (m.department || '').trim() !== department.name)
-  }, [members, department.name])
-
-  const filteredMembers = useMemo(() => {
-    if (!search.trim()) return candidateMembers
-    const q = search.trim().toLowerCase()
-    return candidateMembers.filter(
-      (m) =>
-        (m.display_name && m.display_name.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q)) ||
-        (m.department && m.department.toLowerCase().includes(q)),
-    )
-  }, [candidateMembers, search])
-
-  const allSelected =
-    filteredMembers.length > 0 &&
-    filteredMembers.every((m) => selectedIds.has(m.user_id))
-
-  const toggleSelectAll = () => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (allSelected) {
-        filteredMembers.forEach((m) => next.delete(m.user_id))
-      } else {
-        filteredMembers.forEach((m) => next.add(m.user_id))
-      }
-      return next
-    })
-  }
-
-  const toggleMember = (userId) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(userId)) next.delete(userId)
-      else next.add(userId)
-      return next
-    })
-  }
-
-  // Submit tạo tài khoản mới
-  async function submitCreate(e) {
+  async function submit(e) {
     e.preventDefault()
     if (busy || !name.trim() || !email.trim()) return
     if (password.length < 6) {
@@ -389,271 +338,84 @@ export function AddMembersToDepartmentDialog({
     }
   }
 
-  // Submit chọn từ danh bạ
-  async function submitExisting(e) {
-    e.preventDefault()
-    if (selectedIds.size === 0 || busy) return
-    setBusy(true)
-    setError('')
-    try {
-      for (const userId of selectedIds) {
-        await repo.assignMemberDepartment(userId, department.name)
-      }
-      onAdded(Array.from(selectedIds), department.name)
-    } catch (err) {
-      setError(readableError(err))
-      setBusy(false)
-    }
-  }
-
   return (
     <Dialog
       title={`Thêm nhân sự vào "${department.name}"`}
-      description={
-        mode === 'create'
-          ? `Tạo tài khoản mới và gắn trực tiếp vào phòng ban "${department.name}".`
-          : `Chọn nhân sự từ danh bạ chung để phân bổ vào phòng ban "${department.name}".`
-      }
-      wide={mode === 'existing'}
+      description={`Tạo tài khoản mới và thêm trực tiếp vào phòng ban "${department.name}".`}
       fullMobile
       onClose={() => {
         if (!busy) onClose()
       }}
     >
-      {/* Tab chuyển đổi chế độ */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '6px',
-          marginBottom: '18px',
-          background: '#f4f0fb',
-          padding: '4px',
-          borderRadius: '10px',
-        }}
-      >
-        <button
-          type="button"
-          className={`button sm ${mode === 'create' ? 'primary' : 'ghost'}`}
-          style={{
-            flex: 1,
-            borderRadius: '8px',
-            justifyContent: 'center',
-            fontWeight: mode === 'create' ? 600 : 500,
-          }}
-          onClick={() => {
-            setMode('create')
-            setError('')
-          }}
-        >
-          <UserRoundPlus size={15} /> Tạo tài khoản mới
-        </button>
-        <button
-          type="button"
-          className={`button sm ${mode === 'existing' ? 'primary' : 'ghost'}`}
-          style={{
-            flex: 1,
-            borderRadius: '8px',
-            justifyContent: 'center',
-            fontWeight: mode === 'existing' ? 600 : 500,
-          }}
-          onClick={() => {
-            setMode('existing')
-            setError('')
-          }}
-        >
-          <Users size={15} /> Chọn từ danh bạ ({candidateMembers.length})
-        </button>
-      </div>
+      <form className="dialog-form" onSubmit={submit}>
+        <label>
+          Họ và tên
+          <input
+            required
+            autoFocus
+            maxLength={80}
+            placeholder="Nhập họ và tên nhân sự…"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <label>
+          Email
+          <input
+            required
+            type="email"
+            maxLength={254}
+            placeholder="ten@congty.vn"
+            value={email}
+            autoComplete="off"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+        <label>
+          Mật khẩu ban đầu
+          <PasswordInput
+            required
+            minLength={6}
+            maxLength={72}
+            placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)…"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+        <label>
+          Xác nhận mật khẩu
+          <PasswordInput
+            required
+            maxLength={72}
+            placeholder="Nhập lại mật khẩu…"
+            autoComplete="new-password"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+          />
+        </label>
 
-      {mode === 'create' ? (
-        /* Form tạo tài khoản mới */
-        <form className="dialog-form" onSubmit={submitCreate}>
-          <label>
-            Họ và tên
-            <input
-              required
-              autoFocus
-              maxLength={80}
-              placeholder="Nhập họ và tên nhân sự…"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label>
-            Email
-            <input
-              required
-              type="email"
-              maxLength={254}
-              placeholder="ten@congty.vn"
-              value={email}
-              autoComplete="off"
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <label>
-            Phòng ban
-            <input
-              value={department.name}
-              disabled
-              style={{ background: '#f5f4f9', color: '#685e79', cursor: 'not-allowed' }}
-            />
-          </label>
-          <label>
-            Mật khẩu ban đầu
-            <PasswordInput
-              required
-              minLength={6}
-              maxLength={72}
-              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)…"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <label>
-            Xác nhận mật khẩu
-            <PasswordInput
-              required
-              maxLength={72}
-              placeholder="Nhập lại mật khẩu…"
-              autoComplete="new-password"
-              value={confirmation}
-              onChange={(e) => setConfirmation(e.target.value)}
-            />
-          </label>
+        <ErrorText message={error} />
 
-          <ErrorText message={error} />
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={onClose}
-              disabled={busy}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="button primary"
-              disabled={busy || !name.trim() || !email.trim() || password.length < 6}
-            >
-              <UserRoundPlus size={16} />
-              {busy ? 'Đang tạo…' : 'Tạo tài khoản & Thêm'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        /* Form chọn từ danh bạ có sẵn */
-        <form className="dialog-form" onSubmit={submitExisting}>
-          <div className="existing-member-header">
-            <div className="existing-member-search" style={{ width: '100%' }}>
-              <Search size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Tìm theo tên, email, phòng ban hiện tại..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="clear-search"
-                  onClick={() => setSearch('')}
-                  title="Xóa tìm kiếm"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="existing-member-toolbar">
-            <label className="select-all-label">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleSelectAll}
-                disabled={filteredMembers.length === 0}
-              />
-              <span>
-                {allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'} (
-                {filteredMembers.length})
-              </span>
-            </label>
-            <span className="selected-count">
-              Đã chọn: <strong>{selectedIds.size}</strong>
-            </span>
-          </div>
-
-          <div className="existing-member-list">
-            {filteredMembers.length === 0 ? (
-              <div className="existing-member-empty">
-                {candidateMembers.length === 0 ? (
-                  <p>Tất cả nhân sự trong hệ thống đã thuộc phòng ban này.</p>
-                ) : (
-                  <p>Không tìm thấy nhân sự phù hợp với từ khóa "{search}".</p>
-                )}
-              </div>
-            ) : (
-              filteredMembers.map((m) => {
-                const isSelected = selectedIds.has(m.user_id)
-                return (
-                  <div
-                    key={m.user_id}
-                    className={'existing-member-row' + (isSelected ? ' selected' : '')}
-                    onClick={() => toggleMember(m.user_id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleMember(m.user_id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <Avatar name={m.display_name} id={m.user_id} />
-                    <div className="existing-member-info">
-                      <div className="existing-member-name-row">
-                        <span className="existing-member-name">{m.display_name}</span>
-                        {m.department ? (
-                          <span className="existing-member-dept">
-                            Hiện tại: {m.department}
-                          </span>
-                        ) : (
-                          <span className="muted text-xs">Chưa có phòng</span>
-                        )}
-                      </div>
-                      <span className="existing-member-email">{m.email}</span>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-          <ErrorText message={error} />
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={onClose}
-              disabled={busy}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="button primary"
-              disabled={busy || selectedIds.size === 0}
-            >
-              <UserCheck size={16} />
-              {busy ? 'Đang thêm…' : `Thêm vào phòng ban (${selectedIds.size})`}
-            </button>
-          </div>
-        </form>
-      )}
+        <div className="form-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="button primary"
+            disabled={busy || !name.trim() || !email.trim() || password.length < 6}
+          >
+            <UserRoundPlus size={16} />
+            {busy ? 'Đang tạo…' : 'Tạo tài khoản & Thêm'}
+          </button>
+        </div>
+      </form>
     </Dialog>
   )
 }
