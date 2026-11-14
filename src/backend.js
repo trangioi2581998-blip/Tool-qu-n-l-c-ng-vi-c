@@ -949,6 +949,150 @@ export function createBackend(authUser) {
         await client.from('work_directory_members').delete().eq('user_id', userId)
       } catch {}
     },
+    async listDepartments() {
+      const map = new Map()
+      try {
+        const { data, error } = await client
+          .from('work_departments')
+          .select('id,name,description,created_at')
+          .order('name')
+        if (!error && Array.isArray(data)) {
+          for (const d of data) {
+            if (d.name && d.name.trim()) {
+              map.set(d.name.trim(), {
+                id: d.id,
+                name: d.name.trim(),
+                description: d.description || '',
+              })
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Query work_departments error:', e)
+      }
+
+      // Đảm bảo các phòng ban thực tế từ work_directory_members cũng được hiển thị
+      try {
+        const { data: memList } = await client
+          .from('work_directory_members')
+          .select('department')
+        if (Array.isArray(memList)) {
+          for (const m of memList) {
+            const name = (m.department || '').trim()
+            if (name && !map.has(name)) {
+              map.set(name, { id: name, name, description: '' })
+            }
+          }
+        }
+      } catch {}
+
+      return Array.from(map.values())
+    },
+    async createDepartment(name, description = '') {
+      const cleanName = (name || '').trim()
+      const cleanDesc = (description || '').trim()
+      if (!cleanName) throw new Error('Tên phòng ban không được để trống.')
+
+      try {
+        const res = await client.rpc('work_create_department', {
+          dept_name: cleanName,
+          dept_desc: cleanDesc,
+        })
+        if (!res.error && res.data) return res.data
+      } catch (e) {
+        console.warn('work_create_department RPC error:', e)
+      }
+
+      try {
+        const { data, error } = await client
+          .from('work_departments')
+          .insert({ name: cleanName, description: cleanDesc })
+          .select()
+          .single()
+        if (!error && data) return data
+      } catch {}
+
+      return { id: crypto.randomUUID(), name: cleanName, description: cleanDesc }
+    },
+    async renameDepartment(oldName, newName, description = null) {
+      const cleanOld = (oldName || '').trim()
+      const cleanNew = (newName || '').trim()
+      if (!cleanNew) throw new Error('Tên phòng ban mới không được để trống.')
+
+      try {
+        const res = await client.rpc('work_rename_department', {
+          old_name: cleanOld,
+          new_name: cleanNew,
+          new_desc: description,
+        })
+        if (!res.error && res.data) return res.data
+      } catch (e) {
+        console.warn('work_rename_department RPC error:', e)
+      }
+
+      try {
+        await client
+          .from('work_departments')
+          .update({ name: cleanNew, ...(description ? { description } : {}) })
+          .eq('name', cleanOld)
+        await client
+          .from('work_directory_members')
+          .update({ department: cleanNew })
+          .eq('department', cleanOld)
+        await client
+          .from('work_members')
+          .update({ department: cleanNew })
+          .eq('department', cleanOld)
+      } catch {}
+
+      return { id: cleanNew, name: cleanNew, description: description || '' }
+    },
+    async deleteDepartment(name) {
+      const cleanName = (name || '').trim()
+      try {
+        const res = await client.rpc('work_delete_department', {
+          dept_name: cleanName,
+        })
+        if (!res.error) return
+      } catch (e) {
+        console.warn('work_delete_department RPC error:', e)
+      }
+
+      try {
+        await client.from('work_departments').delete().eq('name', cleanName)
+        await client
+          .from('work_directory_members')
+          .update({ department: '' })
+          .eq('department', cleanName)
+        await client
+          .from('work_members')
+          .update({ department: '' })
+          .eq('department', cleanName)
+      } catch {}
+    },
+    async assignMemberDepartment(userId, departmentName) {
+      const cleanDept = (departmentName || '').trim()
+      try {
+        const res = await client.rpc('work_assign_member_department', {
+          target_user: userId,
+          new_dept: cleanDept,
+        })
+        if (!res.error) return
+      } catch (e) {
+        console.warn('work_assign_member_department RPC error:', e)
+      }
+
+      try {
+        await client
+          .from('work_directory_members')
+          .update({ department: cleanDept })
+          .eq('user_id', userId)
+        await client
+          .from('work_members')
+          .update({ department: cleanDept })
+          .eq('user_id', userId)
+      } catch {}
+    },
     async signOut() {
       result(await client.auth.signOut())
     },

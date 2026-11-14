@@ -1404,6 +1404,93 @@ export function createDemo(userId, onAccounts) {
       save()
       onAccounts(demoAccounts())
     },
+    async listDepartments() {
+      const depts = new Set([
+        'Product & CX',
+        'Kỹ thuật',
+        'QA',
+        'CX',
+        'CNTT',
+        'Kinh doanh',
+        ...(state.departments || []),
+      ])
+      for (const acc of demoAccounts()) {
+        if (acc.department && acc.department.trim()) depts.add(acc.department.trim())
+      }
+      for (const list of Object.values(state.members || {})) {
+        for (const m of list) {
+          if (m.department && m.department.trim()) depts.add(m.department.trim())
+        }
+      }
+      return Array.from(depts).sort().map((name) => ({
+        id: name,
+        name,
+        description: '',
+      }))
+    },
+    async createDepartment(name, description = '') {
+      const clean = (name || '').trim()
+      if (!clean) throw new Error('Tên phòng ban không được để trống.')
+      state.departments = state.departments || []
+      if (!state.departments.includes(clean)) {
+        state.departments.push(clean)
+      }
+      save()
+      return { id: clean, name: clean, description }
+    },
+    async renameDepartment(oldName, newName, description = null) {
+      const cleanOld = (oldName || '').trim()
+      const cleanNew = (newName || '').trim()
+      if (!cleanNew) throw new Error('Tên phòng ban mới không được để trống.')
+
+      state.departments = (state.departments || []).map((d) =>
+        d === cleanOld ? cleanNew : d,
+      )
+      if (!state.departments.includes(cleanNew)) state.departments.push(cleanNew)
+
+      for (const acc of state.accounts || []) {
+        if (acc.department === cleanOld) acc.department = cleanNew
+      }
+      for (const list of Object.values(state.members || {})) {
+        for (const m of list) {
+          if (m.department === cleanOld) m.department = cleanNew
+        }
+      }
+      save()
+      onAccounts(demoAccounts())
+      return { id: cleanNew, name: cleanNew, description: description || '' }
+    },
+    async deleteDepartment(name) {
+      const clean = (name || '').trim()
+      state.departments = (state.departments || []).filter((d) => d !== clean)
+      for (const acc of state.accounts || []) {
+        if (acc.department === clean) acc.department = ''
+      }
+      for (const list of Object.values(state.members || {})) {
+        for (const m of list) {
+          if (m.department === clean) m.department = ''
+        }
+      }
+      save()
+      onAccounts(demoAccounts())
+    },
+    async assignMemberDepartment(userId, departmentName) {
+      const clean = (departmentName || '').trim()
+      state.departments = state.departments || []
+      if (clean && !state.departments.includes(clean)) {
+        state.departments.push(clean)
+      }
+      for (const acc of state.accounts || []) {
+        if (acc.id === userId) acc.department = clean
+      }
+      for (const list of Object.values(state.members || {})) {
+        for (const m of list) {
+          if (m.user_id === userId) m.department = clean
+        }
+      }
+      save()
+      onAccounts(demoAccounts())
+    },
     async signOut() {
       setDemoSession(null)
     },

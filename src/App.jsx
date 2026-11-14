@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
+  Building2,
   CalendarDays,
   Check,
   ChevronRight,
@@ -53,6 +54,10 @@ import {
   CreateDirectoryMemberDialog,
   GlobalMemberPanel,
 } from './global-members.jsx'
+import {
+  DepartmentPanel,
+  DepartmentFormDialog,
+} from './departments.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
 import { uploadTaskAttachments } from './attachments.js'
 import { TeamChatPanel } from './team-chat.jsx'
@@ -138,6 +143,12 @@ const commonPages = {
     title: 'Thành viên chung',
     Icon: Users,
     description: 'Quản lý toàn bộ danh sách thành viên và nhân sự trong tổ chức.',
+  },
+  departments: {
+    title: 'Quản lý phòng ban',
+    Icon: Building2,
+    description:
+      'Quản lý sơ đồ cơ cấu phòng ban và phân bổ nhân sự theo từng phòng ban trong tổ chức.',
   },
 }
 
@@ -1525,7 +1536,7 @@ export default function App({
               <Menu size={21} />
             </IconButton>
             <span>
-              {view.kind === 'allMembers'
+              {view.kind === 'allMembers' || view.kind === 'departments'
                 ? 'Quản lý chung'
                 : team?.name || 'Không gian cá nhân'}
             </span>
@@ -1535,7 +1546,8 @@ export default function App({
           <div className="top-actions">
             {view.kind !== 'members' &&
               view.kind !== 'chat' &&
-              view.kind !== 'allMembers' && (
+              view.kind !== 'allMembers' &&
+              view.kind !== 'departments' && (
               <div className="search-box">
                 <Search size={17} />
                 <input
@@ -1675,6 +1687,17 @@ export default function App({
                         }
                       >
                         <UserRoundPlus size={18} /> Tạo tài khoản mới
+                      </button>
+                    )
+                  ) : view.kind === 'departments' ? (
+                    isOwner && (
+                      <button
+                        className="button hero-primary"
+                        onClick={() =>
+                          setModal({ type: 'create-department' })
+                        }
+                      >
+                        <Plus size={18} /> Thêm phòng ban mới
                       </button>
                     )
                   ) : view.kind === 'reports' ? (
@@ -1937,6 +1960,40 @@ export default function App({
                 </button>
               </div>
             ))}
+          {view.kind === 'departments' &&
+            (isOwner ? (
+              <DepartmentPanel
+                repo={repo}
+                currentUserId={repo.user.id}
+                notify={notify}
+                onOpenCreateDept={() =>
+                  setModal({ type: 'create-department' })
+                }
+                onSwitchTeam={switchTeam}
+              />
+            ) : (
+              <div
+                className="panel"
+                style={{
+                  padding: 48,
+                  textAlign: 'center',
+                  background: 'white',
+                  borderRadius: 14,
+                }}
+              >
+                <h3>Giới hạn quyền truy cập</h3>
+                <p className="muted" style={{ margin: '10px 0 20px' }}>
+                  Chỉ có tài khoản trưởng nhóm mới xem được menu Quản lý phòng ban này.
+                </p>
+                <button
+                  type="button"
+                  className="button primary"
+                  onClick={() => go('mine')}
+                >
+                  Quay lại Việc của tôi
+                </button>
+              </div>
+            ))}
         </main>
       </div>
       {modal?.type === 'task' && (
@@ -2036,6 +2093,16 @@ export default function App({
                 members: [...cur.members, created],
               }))
             }
+          }}
+        />
+      )}
+      {modal?.type === 'create-department' && (
+        <DepartmentFormDialog
+          repo={repo}
+          onClose={() => setModal(null)}
+          onSaved={(dept) => {
+            setModal(null)
+            notify(`Đã tạo phòng ban "${dept.name}".`)
           }}
         />
       )}
