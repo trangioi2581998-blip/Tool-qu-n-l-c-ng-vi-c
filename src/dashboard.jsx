@@ -1427,9 +1427,53 @@ export function SendReportDialog({
         await repo.sendTeamMessage(team.id, messageBody)
       }
 
-      notify?.(
-        `Đã gửi báo cáo tiến độ tới ${selectedMemberIds.length} thành viên!`,
+      // Gửi email thực tế tới các thành viên được chọn
+      const selectedMembers = members.filter((m) =>
+        selectedMemberIds.includes(m.user_id),
       )
+      const emailSubject = `[Nhịp việc] Báo cáo tiến độ: ${team?.name || 'Nhóm'} - ${targetLabel}`
+      const emailBody = [
+        `Báo cáo trạng thái & tiến độ công việc`,
+        `Nhóm: ${team?.name || 'Product & CX'}`,
+        `Kỳ báo cáo: ${targetLabel} (${targetBounds.rangeLabel})`,
+        `Đối chiếu với: ${compareLabel} (${compareBounds.rangeLabel})`,
+        `Nhân sự lọc: ${memberFilterLabel}`,
+        `Người gửi: ${repo?.user?.name || 'Trưởng nhóm'}`,
+        note.trim() ? `Lời nhắn: ${note.trim()}` : '',
+        `Tổng số công việc: ${targetMatrix.totalActive} việc (${totalDiff >= 0 ? '+' : ''}${totalDiff} so với ${compareLabel})`,
+        '',
+        'TỔNG HỢP TIẾN ĐỘ:',
+        ...summaryLines.map((l) => l.replace(/\*\*/g, '')),
+      ]
+        .filter(Boolean)
+        .join('\n')
+
+      let emailResult = null
+      if (repo?.sendReportEmail) {
+        emailResult = await repo.sendReportEmail({
+          team,
+          recipients: selectedMembers,
+          subject: emailSubject,
+          body: emailBody,
+        })
+      }
+
+      if (!emailResult?.configured) {
+        notify?.(
+          `Đã gửi vào Chat nhóm. Lưu ý: Chưa gửi được Email thực tế do hệ thống chưa cấu hình tài khoản gửi Email (SMTP/Gmail/Resend). Hãy bấm vào biểu tượng Chuông thông báo góc trên để cài đặt Email.`,
+          true,
+        )
+      } else if (!emailResult.success) {
+        notify?.(
+          `Đã gửi vào Chat nhóm, nhưng gửi Email gặp lỗi: ${emailResult.detail}`,
+          true,
+        )
+      } else {
+        notify?.(
+          `Đã gửi báo cáo tiến độ thành công tới Email của ${emailResult.deliveredCount} thành viên!`,
+        )
+      }
+
       onClose()
     } catch (err) {
       console.error('Send report error:', err)

@@ -474,12 +474,14 @@ function prepareMessages(jobs, baseUrl) {
     const text = actionUrl
       ? `${greetingLine}${job.body}\n\nXem chi tiết công việc: ${actionUrl}`
       : `${greetingLine}${job.body}`
-    const html = buildHtmlEmail({
-      subject: job.subject,
-      body: job.body,
-      actionUrl,
-      recipientName: job.name || '',
-    })
+    const html =
+      job.html ||
+      buildHtmlEmail({
+        subject: job.subject,
+        body: job.body,
+        actionUrl,
+        recipientName: job.name || '',
+      })
     return {
       id: job.id,
       lease_id: job.lease_id,

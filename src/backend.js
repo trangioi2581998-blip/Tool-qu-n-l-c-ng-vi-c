@@ -146,6 +146,117 @@ export function createBackend(authUser) {
       }
       return data.testResult
     },
+    async sendReportEmail({ team, recipients = [], subject, body, html }) {
+      try {
+        await client.rpc('work_queue_report_emails', {
+          team_id: team?.id || null,
+          recipient_ids: recipients.map((r) => r.user_id).filter(Boolean),
+          subject,
+          body,
+        })
+      } catch {
+        // Fallback if RPC migration not run yet
+      }
+
+      let settings = null
+      try {
+        settings = await result(await client.rpc('work_get_email_settings'))
+      } catch (err) {
+        console.warn('Could not read email settings:', err)
+      }
+
+      const isConfigured =
+        settings?.enabled &&
+        ((settings?.provider === 'smtp' &&
+          Boolean(settings?.smtp_user?.trim()) &&
+          Boolean(settings?.smtp_pass?.trim())) ||
+          ((settings?.provider === 'gas' || settings?.provider === 'google_script') &&
+            Boolean(settings?.webhook_url?.trim())) ||
+          (settings?.provider === 'resend' &&
+            Boolean(settings?.resend_api_key?.trim())))
+
+      if (!isConfigured) {
+        return {
+          success: false,
+          configured: false,
+          reason: 'not_configured',
+          detail:
+            'Hệ thống chưa cấu hình thông tin gửi Email (SMTP / Gmail / Resend).',
+        }
+      }
+
+      const validRecipients = recipients.filter((r) => Boolean(r.email?.trim()))
+      if (!validRecipients.length) {
+        return {
+          success: false,
+          configured: true,
+          reason: 'no_recipients',
+          detail: 'Các thành viên được chọn chưa có địa chỉ email.',
+        }
+      }
+
+      const jobs = validRecipients.map((r) => ({
+        id: crypto.randomUUID(),
+        lease_id: 'report-' + Date.now(),
+        email: r.email.trim(),
+        name: r.display_name || '',
+        subject: subject || '[Nhịp việc] Báo cáo tiến độ công việc',
+        body,
+        html,
+        team_id: team?.id || null,
+      }))
+
+      try {
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            settings,
+            jobs,
+            baseUrl: location.origin + location.pathname,
+          }),
+        })
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => null)
+          return {
+            success: false,
+            configured: true,
+            reason: 'server_error',
+            detail: errData?.error || 'Không thể kết nối máy chủ gửi email.',
+          }
+        }
+
+        const data = await response.json().catch(() => null)
+        const results = data?.results || []
+        const deliveredCount = results.filter((r) => r.delivered).length
+        const failed = results.filter((r) => !r.delivered)
+
+        if (deliveredCount === 0 && failed.length > 0) {
+          return {
+            success: false,
+            configured: true,
+            reason: 'delivery_failed',
+            detail: failed[0]?.detail || 'Gửi email không thành công.',
+          }
+        }
+
+        return {
+          success: true,
+          configured: true,
+          deliveredCount,
+          totalCount: jobs.length,
+          detail: 'OK',
+        }
+      } catch (err) {
+        return {
+          success: false,
+          configured: true,
+          reason: 'network_error',
+          detail: err?.message || 'Lỗi mạng khi gửi email.',
+        }
+      }
+    },
     listTeams: () =>
       allRows(() =>
         client

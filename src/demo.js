@@ -1010,6 +1010,15 @@ export function createDemo(userId, onAccounts) {
     async sendTestEmail() {
       return { delivered: true, detail: 'OK (Demo)' }
     },
+    async sendReportEmail({ recipients = [] }) {
+      return {
+        success: true,
+        configured: true,
+        deliveredCount: recipients.length,
+        totalCount: recipients.length,
+        detail: 'OK (Demo)',
+      }
+    },
     async dispatchPendingEmails() {
       return { configured: true, sent: 0, failed: 0 }
     },
