@@ -1682,11 +1682,9 @@ export default function App({
                     isOwner && (
                       <button
                         className="button hero-primary"
-                        onClick={() =>
-                          setModal({ type: 'create-directory-member' })
-                        }
+                        onClick={() => onCreate('team')}
                       >
-                        <UserRoundPlus size={18} /> Tạo tài khoản mới
+                        <Plus size={18} /> Tạo mới dự án
                       </button>
                     )
                   ) : view.kind === 'departments' ? (
