@@ -201,3 +201,4 @@ begin
 end;
 $$;
 grant execute on function public.work_delete_directory_member(uuid) to authenticated;
+

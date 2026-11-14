@@ -2,17 +2,32 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Briefcase,
   Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Crown,
+  ExternalLink,
+  FolderKanban,
+  FolderOpen,
   FolderPlus,
+  Layers,
+  List,
+  ListTree,
   MoreVertical,
   Pencil,
   Plus,
   RefreshCw,
   Search,
+  ShieldCheck,
   Trash2,
   UserCheck,
+  UserMinus,
   UserPlus,
   UserRoundPlus,
   Users,
+  UsersRound,
+  X,
 } from 'lucide-react'
 import {
   Avatar,
@@ -123,7 +138,7 @@ export function AddTeamMemberDialog({
   return (
     <Dialog
       title={`Thêm thành viên vào dự án "${team?.name || ''}"`}
-      description="Chọn thành viên từ danh sách Thành viên chung để thêm vào dự án này."
+      description="Chọn thành viên từ danh bạ Thành viên chung để thêm vào dự án này."
       wide
       fullMobile
       onClose={() => {
@@ -154,7 +169,7 @@ export function AddTeamMemberDialog({
           </div>
           <div className="existing-member-role-select">
             <label>
-              <span>Vai trò trong dự án:</span>
+              <span>Vai trò:</span>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="member">Nhân viên</option>
                 <option value="deputy">Phó nhóm</option>
@@ -728,23 +743,27 @@ export function DeleteDirectoryMemberDialog({
 }
 
 /**
- * Trang "Thành viên chung" (Global Members Directory)
+ * Trang "Thành viên chung" (Global Members Directory) dạng TREE phân cấp theo Team
  */
 export function GlobalMemberPanel({
   repo,
   teams = [],
   currentUserId,
   onOpenCreate,
+  onOpenCreateTeam,
   notify,
   onSwitchTeam,
 }) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [deptFilter, setDeptFilter] = useState('all')
-  const [teamFilter, setTeamFilter] = useState('all')
+  const [viewMode, setViewMode] = useState('tree') // 'tree' | 'flat'
+
+  // Expand / collapse state cho các team trong tree view
+  const [expandedTeamIds, setExpandedTeamIds] = useState(new Set())
 
   // Modals inside GlobalMemberPanel
+  const [addingToTeam, setAddingToTeam] = useState(null)
   const [editingMember, setEditingMember] = useState(null)
   const [assigningMember, setAssigningMember] = useState(null)
   const [deletingMember, setDeletingMember] = useState(null)
@@ -767,51 +786,128 @@ export function GlobalMemberPanel({
     reload()
   }, [repo])
 
-  // Lấy danh sách các phòng ban duy nhất để lọc
-  const departments = useMemo(() => {
-    const set = new Set()
-    for (const m of members) {
-      if (m.department && m.department.trim()) set.add(m.department.trim())
+  // Mặc định mở rộng tất cả các team
+  useEffect(() => {
+    if (teams && teams.length > 0) {
+      setExpandedTeamIds(new Set([...teams.map((t) => t.id), 'unassigned']))
     }
-    return Array.from(set).sort()
+  }, [teams])
+
+  const toggleTeam = (teamId) => {
+    setExpandedTeamIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(teamId)) next.delete(teamId)
+      else next.add(teamId)
+      return next
+    })
+  }
+
+  const expandAll = () => {
+    setExpandedTeamIds(new Set([...teams.map((t) => t.id), 'unassigned']))
+  }
+
+  const collapseAll = () => {
+    setExpandedTeamIds(new Set())
+  }
+
+  // Thay đổi vai trò của thành viên trong một team
+  const handleChangeRole = async (teamId, userId, newRole) => {
+    try {
+      await repo.setMemberRole(teamId, userId, newRole)
+      setMembers((cur) =>
+        cur.map((m) => {
+          if (m.user_id !== userId) return m
+          const updatedTeams = (m.teams || []).map((t) =>
+            t.id === teamId ? { ...t, role: newRole } : t,
+          )
+          return { ...m, teams: updatedTeams }
+        }),
+      )
+      notify('Đã cập nhật vai trò của thành viên trong nhóm.')
+    } catch (err) {
+      notify(readableError(err), true)
+    }
+  }
+
+  // Gỡ thành viên khỏi một team
+  const handleRemoveFromTeam = async (targetTeam, member) => {
+    try {
+      await repo.removeMember(targetTeam, member.user_id)
+      setMembers((cur) =>
+        cur.map((m) => {
+          if (m.user_id !== member.user_id) return m
+          const updatedTeams = (m.teams || []).filter((t) => t.id !== targetTeam.id)
+          return { ...m, teams: updatedTeams }
+        }),
+      )
+      notify(`Đã gỡ "${member.display_name}" khỏi nhóm "${targetTeam.name}".`)
+    } catch (err) {
+      notify(readableError(err), true)
+    }
+  }
+
+  // Lọc dữ liệu theo từ khóa tìm kiếm
+  const q = search.trim().toLowerCase()
+
+  const getTeamMembers = (teamId) => {
+    return members
+      .filter((m) => m.teams && m.teams.some((team) => team.id === teamId))
+      .map((m) => {
+        const teamInfo = m.teams.find((team) => team.id === teamId)
+        return {
+          ...m,
+          role: teamInfo?.role || 'member',
+        }
+      })
+      .sort((a, b) => {
+        const roleWeight = { owner: 0, deputy: 1, member: 2 }
+        const diff = (roleWeight[a.role] ?? 2) - (roleWeight[b.role] ?? 2)
+        if (diff !== 0) return diff
+        return a.display_name.localeCompare(b.display_name)
+      })
+  }
+
+  const unassignedMembers = useMemo(() => {
+    return members.filter((m) => !m.teams || m.teams.length === 0)
   }, [members])
 
-  // Lọc thành viên
-  const filteredMembers = useMemo(() => {
-    return members.filter((m) => {
-      // 1. Tìm kiếm
-      if (search.trim()) {
-        const q = search.trim().toLowerCase()
-        const matchName = m.display_name && m.display_name.toLowerCase().includes(q)
-        const matchEmail = m.email && m.email.toLowerCase().includes(q)
-        const matchDept = m.department && m.department.toLowerCase().includes(q)
-        if (!matchName && !matchEmail && !matchDept) return false
-      }
-      // 2. Lọc phòng ban
-      if (deptFilter !== 'all') {
-        if ((m.department || '').trim() !== deptFilter) return false
-      }
-      // 3. Lọc dự án
-      if (teamFilter !== 'all') {
-        if (teamFilter === 'none') {
-          if (m.teams && m.teams.length > 0) return false
-        } else {
-          if (!m.teams || !m.teams.some((t) => t.id === teamFilter)) return false
-        }
-      }
-      return true
+  // Lọc cho Tree View:
+  // Nếu có tìm kiếm: hiển thị team nếu tên team match hoặc có thành viên trong team match
+  const filteredTeams = useMemo(() => {
+    if (!q) return teams
+    return teams.filter((t) => {
+      const matchTeam = t.name.toLowerCase().includes(q)
+      const teamMems = getTeamMembers(t.id)
+      const matchMember = teamMems.some(
+        (m) =>
+          (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+          (m.email && m.email.toLowerCase().includes(q)) ||
+          (m.department && m.department.toLowerCase().includes(q)),
+      )
+      return matchTeam || matchMember
     })
-  }, [members, search, deptFilter, teamFilter])
+  }, [teams, members, q])
+
+  const filteredFlatMembers = useMemo(() => {
+    if (!q) return members
+    return members.filter(
+      (m) =>
+        (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+        (m.email && m.email.toLowerCase().includes(q)) ||
+        (m.department && m.department.toLowerCase().includes(q)) ||
+        (m.teams && m.teams.some((t) => t.name.toLowerCase().includes(q))),
+    )
+  }, [members, q])
 
   return (
     <section className="panel global-member-panel">
-      {/* Thanh công cụ tìm kiếm và lọc */}
+      {/* Thanh công cụ tìm kiếm và điều khiển view */}
       <div className="global-member-toolbar">
         <div className="global-member-search">
           <Search size={16} className="search-icon" />
           <input
             type="text"
-            placeholder="Tìm kiếm thành viên theo họ tên, email, phòng ban..."
+            placeholder="Tìm theo tên thành viên, email, phòng ban hoặc tên team..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -826,307 +922,596 @@ export function GlobalMemberPanel({
           )}
         </div>
 
-        <div className="global-member-filters">
-          <select
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            title="Lọc theo phòng ban"
-          >
-            <option value="all">Tất cả phòng ban</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                Phòng: {dept}
-              </option>
-            ))}
-          </select>
+        <div className="global-member-controls">
+          <div className="segmented-control" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'tree'}
+              className={'segmented-btn' + (viewMode === 'tree' ? ' active' : '')}
+              onClick={() => setViewMode('tree')}
+              title="Xem dạng cây phân cấp theo nhóm"
+            >
+              <ListTree size={15} />
+              <span>Dạng cây</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'flat'}
+              className={'segmented-btn' + (viewMode === 'flat' ? ' active' : '')}
+              onClick={() => setViewMode('flat')}
+              title="Xem danh sách tất cả"
+            >
+              <List size={15} />
+              <span>Dạng bảng</span>
+            </button>
+          </div>
 
-          <select
-            value={teamFilter}
-            onChange={(e) => setTeamFilter(e.target.value)}
-            title="Lọc theo dự án"
-          >
-            <option value="all">Tất cả dự án</option>
-            <option value="none">Chưa vào dự án nào</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                Dự án: {t.name}
-              </option>
-            ))}
-          </select>
+          {viewMode === 'tree' && (
+            <div className="tree-toggle-actions">
+              <button
+                type="button"
+                className="button secondary sm icon-only-mobile"
+                onClick={expandAll}
+                title="Mở rộng tất cả các nhóm"
+              >
+                <ChevronsUpDown size={14} />
+                <span className="btn-label-desktop">Mở tất cả</span>
+              </button>
+              <button
+                type="button"
+                className="button secondary sm icon-only-mobile"
+                onClick={collapseAll}
+                title="Thu gọn tất cả các nhóm"
+              >
+                <ChevronsDownUp size={14} />
+                <span className="btn-label-desktop">Thu gọn</span>
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
             className="button secondary sm icon-only-mobile"
             onClick={reload}
-            title="Làm mới"
+            title="Tải lại danh sách"
           >
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             <span className="btn-label-desktop">Làm mới</span>
           </button>
+
+          {onOpenCreateTeam && (
+            <button
+              type="button"
+              className="button secondary sm icon-only-mobile"
+              onClick={onOpenCreateTeam}
+              title="Tạo nhóm mới"
+            >
+              <Plus size={15} />
+              <span className="btn-label-desktop">Tạo nhóm mới</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Thông tin số lượng */}
       <div className="global-member-count-bar">
         <span>
-          Hiển thị <strong>{filteredMembers.length}</strong> / {members.length} thành viên chung
+          Tổng số <strong>{teams.length}</strong> nhóm công việc •{' '}
+          <strong>{members.length}</strong> thành viên chung
         </span>
       </div>
 
-      {/* Bảng danh sách thành viên Desktop */}
-      <div className="member-table-wrap">
-        <table className="member-table" aria-label="Bảng thành viên chung">
-          <thead>
-            <tr>
-              <th>Họ và tên</th>
-              <th>Email</th>
-              <th>Phòng ban</th>
-              <th>Dự án đang tham gia</th>
-              <th className="member-col-actions">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '36px 0' }}>
-                  <div className="existing-member-loading">
-                    <RefreshCw size={20} className="spin" /> Đang tải danh sách thành viên...
+      {loading ? (
+        <div className="existing-member-loading" style={{ padding: '60px 0' }}>
+          <RefreshCw size={24} className="spin" /> Đang tải cây danh bạ thành viên...
+        </div>
+      ) : viewMode === 'tree' ? (
+        /* ===================================================================
+           DẠNG TREE: NHÓM (TEAM) -> CÁC THÀNH VIÊN TRONG NHÓM
+           =================================================================== */
+        <div className="member-tree-container">
+          {filteredTeams.map((t) => {
+            const teamMems = getTeamMembers(t.id).filter((m) => {
+              if (!q) return true
+              if (t.name.toLowerCase().includes(q)) return true
+              return (
+                (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+                (m.email && m.email.toLowerCase().includes(q)) ||
+                (m.department && m.department.toLowerCase().includes(q))
+              )
+            })
+            const isExpanded = expandedTeamIds.has(t.id) || Boolean(q)
+
+            return (
+              <div
+                key={t.id}
+                className={'member-tree-team-card' + (isExpanded ? ' expanded' : '')}
+              >
+                {/* Header nhánh Team */}
+                <div
+                  className="member-tree-team-header"
+                  onClick={() => toggleTeam(t.id)}
+                >
+                  <button
+                    type="button"
+                    className="tree-collapse-btn"
+                    aria-label={isExpanded ? 'Thu gọn' : 'Mở rộng'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleTeam(t.id)
+                    }}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown size={18} />
+                    ) : (
+                      <ChevronRight size={18} />
+                    )}
+                  </button>
+
+                  <div className="member-tree-team-title">
+                    <span className="member-tree-team-icon">
+                      {isExpanded ? (
+                        <FolderOpen size={18} />
+                      ) : (
+                        <FolderKanban size={18} />
+                      )}
+                    </span>
+                    <h3>{t.name}</h3>
+                    <span className="member-tree-count-pill">
+                      {teamMems.length} thành viên
+                    </span>
                   </div>
-                </td>
-              </tr>
-            ) : filteredMembers.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '40px 0', color: '#777' }}>
-                  {members.length === 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                      <p>Chưa có thành viên nào trong danh bạ chung.</p>
+
+                  <div
+                    className="member-tree-team-actions"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="button secondary sm"
+                      onClick={() => setAddingToTeam(t)}
+                      title="Thêm thành viên từ danh bạ chung vào nhóm này"
+                    >
+                      <UserPlus size={14} />
+                      <span className="btn-label-desktop">Thêm thành viên</span>
+                    </button>
+                    {onSwitchTeam && (
                       <button
                         type="button"
-                        className="button primary sm"
-                        onClick={onOpenCreate}
+                        className="button ghost sm"
+                        onClick={() => onSwitchTeam(t.id)}
+                        title="Vào dự án này"
                       >
-                        <UserRoundPlus size={15} /> Tạo tài khoản thành viên đầu tiên
+                        <ExternalLink size={14} />
+                        <span className="btn-label-desktop">Vào dự án</span>
                       </button>
-                    </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Danh sách thành viên bên trong Team */}
+                {isExpanded && (
+                  <div className="member-tree-team-body">
+                    {teamMems.length === 0 ? (
+                      <div className="member-tree-empty-team">
+                        <p>Nhóm này hiện chưa có thành viên nào.</p>
+                        <button
+                          type="button"
+                          className="button secondary sm"
+                          onClick={() => setAddingToTeam(t)}
+                        >
+                          <UserPlus size={14} /> Chọn thêm thành viên vào nhóm
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="member-tree-list">
+                        {teamMems.map((m) => {
+                          const role = m.role || 'member'
+                          const isCurrentUser = m.user_id === currentUserId
+                          return (
+                            <div key={m.user_id} className="member-tree-item">
+                              <div className="member-tree-item-user">
+                                <Avatar name={m.display_name} id={m.user_id} />
+                                <div className="member-tree-item-name-group">
+                                  <div className="member-tree-item-name">
+                                    <strong>{m.display_name}</strong>
+                                    {isCurrentUser && (
+                                      <small className="member-you-tag">
+                                        (Bạn)
+                                      </small>
+                                    )}
+                                  </div>
+                                  <span className="member-tree-item-email">
+                                    {m.email}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="member-tree-item-dept">
+                                {m.department ? (
+                                  <span className="member-dept-badge">
+                                    {m.department}
+                                  </span>
+                                ) : (
+                                  <span className="muted text-xs">
+                                    Chưa phân phòng
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="member-tree-item-role">
+                                <span
+                                  className={
+                                    'badge ' +
+                                    (role === 'owner'
+                                      ? 'purple'
+                                      : role === 'deputy'
+                                        ? 'blue'
+                                        : 'gray')
+                                  }
+                                >
+                                  {role === 'owner' && (
+                                    <Crown size={12} style={{ marginRight: 4 }} />
+                                  )}
+                                  {role === 'deputy' && (
+                                    <ShieldCheck
+                                      size={12}
+                                      style={{ marginRight: 4 }}
+                                    />
+                                  )}
+                                  {role === 'owner'
+                                    ? 'Trưởng nhóm'
+                                    : role === 'deputy'
+                                      ? 'Phó nhóm'
+                                      : 'Nhân viên'}
+                                </span>
+                              </div>
+
+                              <div className="member-tree-item-actions">
+                                <Dropdown
+                                  trigger={
+                                    <button
+                                      type="button"
+                                      className="member-action-trigger"
+                                      aria-label={`Thao tác với ${m.display_name}`}
+                                    >
+                                      <MoreVertical size={16} />
+                                    </button>
+                                  }
+                                >
+                                  {(close) => (
+                                    <>
+                                      {role !== 'owner' && (
+                                        <>
+                                          {role === 'deputy' ? (
+                                            <button
+                                              type="button"
+                                              className="member-menu-item"
+                                              onClick={() => {
+                                                close()
+                                                handleChangeRole(
+                                                  t.id,
+                                                  m.user_id,
+                                                  'member',
+                                                )
+                                              }}
+                                            >
+                                              <UserMinus size={15} /> Gỡ quyền phó
+                                              nhóm
+                                            </button>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              className="member-menu-item"
+                                              onClick={() => {
+                                                close()
+                                                handleChangeRole(
+                                                  t.id,
+                                                  m.user_id,
+                                                  'deputy',
+                                                )
+                                              }}
+                                            >
+                                              <ShieldCheck size={15} /> Bổ nhiệm
+                                              phó nhóm
+                                            </button>
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            className="member-menu-item text-danger"
+                                            onClick={() => {
+                                              close()
+                                              handleRemoveFromTeam(t, m)
+                                            }}
+                                          >
+                                            <Trash2 size={15} /> Gỡ khỏi nhóm này
+                                          </button>
+                                        </>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        className="member-menu-item"
+                                        onClick={() => {
+                                          close()
+                                          setEditingMember(m)
+                                        }}
+                                      >
+                                        <Pencil size={15} /> Sửa thông tin tài
+                                        khoản
+                                      </button>
+
+                                      {!isCurrentUser && (
+                                        <button
+                                          type="button"
+                                          className="member-menu-item member-menu-danger"
+                                          onClick={() => {
+                                            close()
+                                            setDeletingMember(m)
+                                          }}
+                                        >
+                                          <Trash2 size={15} /> Xóa tài khoản hệ
+                                          thống
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                </Dropdown>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Nhánh: Thành viên chưa phân vào nhóm nào */}
+          {unassignedMembers.length > 0 && (!q || unassignedMembers.some((m) =>
+            (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+            (m.email && m.email.toLowerCase().includes(q)),
+          )) && (
+            <div
+              className={
+                'member-tree-team-card unassigned-card' +
+                (expandedTeamIds.has('unassigned') ? ' expanded' : '')
+              }
+            >
+              <div
+                className="member-tree-team-header"
+                onClick={() => toggleTeam('unassigned')}
+              >
+                <button
+                  type="button"
+                  className="tree-collapse-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleTeam('unassigned')
+                  }}
+                >
+                  {expandedTeamIds.has('unassigned') ? (
+                    <ChevronDown size={18} />
                   ) : (
-                    <p>Không tìm thấy thành viên phù hợp với bộ lọc.</p>
+                    <ChevronRight size={18} />
                   )}
-                </td>
-              </tr>
-            ) : (
-              filteredMembers.map((m) => {
-                const isCurrentUser = m.user_id === currentUserId
-                return (
-                  <tr key={m.user_id}>
-                    <td>
-                      <div className="member-name-cell">
-                        <Avatar name={m.display_name} id={m.user_id} />
-                        <div>
-                          <strong>
-                            {m.display_name}{' '}
-                            {isCurrentUser && <small>(Bạn)</small>}
-                          </strong>
+                </button>
+                <div className="member-tree-team-title">
+                  <span className="member-tree-team-icon muted">
+                    <UsersRound size={18} />
+                  </span>
+                  <h3>Chưa phân vào nhóm nào</h3>
+                  <span className="member-tree-count-pill unassigned">
+                    {unassignedMembers.length} thành viên
+                  </span>
+                </div>
+              </div>
+
+              {expandedTeamIds.has('unassigned') && (
+                <div className="member-tree-team-body">
+                  <div className="member-tree-list">
+                    {unassignedMembers.map((m) => (
+                      <div key={m.user_id} className="member-tree-item">
+                        <div className="member-tree-item-user">
+                          <Avatar name={m.display_name} id={m.user_id} />
+                          <div className="member-tree-item-name-group">
+                            <div className="member-tree-item-name">
+                              <strong>{m.display_name}</strong>
+                              {m.user_id === currentUserId && (
+                                <small className="member-you-tag">(Bạn)</small>
+                              )}
+                            </div>
+                            <span className="member-tree-item-email">
+                              {m.email}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="member-tree-item-dept">
+                          {m.department ? (
+                            <span className="member-dept-badge">
+                              {m.department}
+                            </span>
+                          ) : (
+                            <span className="muted text-xs">
+                              Chưa phân phòng
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="member-tree-item-role">
+                          <span className="badge gray">Chưa vào nhóm</span>
+                        </div>
+
+                        <div className="member-tree-item-actions">
+                          <button
+                            type="button"
+                            className="button secondary sm"
+                            onClick={() => setAssigningMember(m)}
+                          >
+                            <FolderPlus size={14} /> Gán vào nhóm…
+                          </button>
                         </div>
                       </div>
-                    </td>
-                    <td className="member-cell-email">{m.email}</td>
-                    <td>
-                      {m.department ? (
-                        <span className="member-dept-badge">{m.department}</span>
-                      ) : (
-                        <span className="muted">Chưa phân phòng</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="global-member-teams-cell">
-                        {m.teams && m.teams.length > 0 ? (
-                          m.teams.map((t) => (
-                            <span
-                              key={t.id}
-                              className="global-team-badge"
-                              title={`Vai trò: ${
-                                t.role === 'owner'
-                                  ? 'Trưởng nhóm'
-                                  : t.role === 'deputy'
-                                    ? 'Phó nhóm'
-                                    : 'Nhân viên'
-                              }`}
-                              onClick={() => onSwitchTeam?.(t.id)}
-                            >
-                              <Briefcase size={12} />
-                              {t.name}
-                              <small>
-                                (
-                                {t.role === 'owner'
-                                  ? 'Trưởng nhóm'
-                                  : t.role === 'deputy'
-                                    ? 'Phó nhóm'
-                                    : 'Nhân viên'}
-                                )
-                              </small>
-                            </span>
-                          ))
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ===================================================================
+           DẠNG BẢNG (FLAT TABLE)
+           =================================================================== */
+        <div className="member-table-wrap">
+          <table className="member-table" aria-label="Bảng thành viên chung">
+            <thead>
+              <tr>
+                <th>Họ và tên</th>
+                <th>Email</th>
+                <th>Phòng ban</th>
+                <th>Dự án đang tham gia</th>
+                <th className="member-col-actions">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredFlatMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px 0', color: '#777' }}>
+                    Không tìm thấy thành viên phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                filteredFlatMembers.map((m) => {
+                  const isCurrentUser = m.user_id === currentUserId
+                  return (
+                    <tr key={m.user_id}>
+                      <td>
+                        <div className="member-name-cell">
+                          <Avatar name={m.display_name} id={m.user_id} />
+                          <div>
+                            <strong>
+                              {m.display_name}{' '}
+                              {isCurrentUser && <small>(Bạn)</small>}
+                            </strong>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="member-cell-email">{m.email}</td>
+                      <td>
+                        {m.department ? (
+                          <span className="member-dept-badge">{m.department}</span>
                         ) : (
-                          <span className="muted text-sm">Chưa vào dự án nào</span>
+                          <span className="muted">Chưa phân phòng</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="member-col-actions">
-                      <Dropdown
-                        trigger={
-                          <button
-                            type="button"
-                            className="member-action-trigger"
-                            aria-label={`Thao tác với ${m.display_name}`}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                        }
-                      >
-                        {(close) => (
-                          <>
+                      </td>
+                      <td>
+                        <div className="global-member-teams-cell">
+                          {m.teams && m.teams.length > 0 ? (
+                            m.teams.map((t) => (
+                              <span
+                                key={t.id}
+                                className="global-team-badge"
+                                onClick={() => onSwitchTeam?.(t.id)}
+                              >
+                                <Briefcase size={12} />
+                                {t.name}
+                                <small>
+                                  (
+                                  {t.role === 'owner'
+                                    ? 'Trưởng nhóm'
+                                    : t.role === 'deputy'
+                                      ? 'Phó nhóm'
+                                      : 'Nhân viên'}
+                                  )
+                                </small>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="muted text-sm">Chưa vào nhóm nào</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="member-col-actions">
+                        <Dropdown
+                          trigger={
                             <button
                               type="button"
-                              className="member-menu-item"
-                              onClick={() => {
-                                close()
-                                setAssigningMember(m)
-                              }}
+                              className="member-action-trigger"
+                              aria-label={`Thao tác với ${m.display_name}`}
                             >
-                              <FolderPlus size={15} /> Thêm vào dự án…
+                              <MoreVertical size={16} />
                             </button>
-                            <button
-                              type="button"
-                              className="member-menu-item"
-                              onClick={() => {
-                                close()
-                                setEditingMember(m)
-                              }}
-                            >
-                              <Pencil size={15} /> Sửa thông tin
-                            </button>
-                            {!isCurrentUser && (
+                          }
+                        >
+                          {(close) => (
+                            <>
                               <button
                                 type="button"
-                                className="member-menu-item member-menu-danger"
+                                className="member-menu-item"
                                 onClick={() => {
                                   close()
-                                  setDeletingMember(m)
+                                  setAssigningMember(m)
                                 }}
                               >
-                                <Trash2 size={15} /> Xóa tài khoản
+                                <FolderPlus size={15} /> Thêm vào nhóm…
                               </button>
-                            )}
-                          </>
-                        )}
-                      </Dropdown>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Danh sách thẻ Mobile */}
-      <div className="member-cards-mobile" role="list" aria-label="Danh sách thành viên chung">
-        {filteredMembers.map((m) => {
-          const isCurrentUser = m.user_id === currentUserId
-          return (
-            <div key={m.user_id} className="member-card-item" role="listitem">
-              <div className="member-card-header">
-                <div className="member-card-user">
-                  <Avatar name={m.display_name} id={m.user_id} />
-                  <div className="member-card-name-group">
-                    <div className="member-card-name">
-                      <strong>{m.display_name}</strong>
-                      {isCurrentUser && (
-                        <small className="member-you-tag">(Bạn)</small>
-                      )}
-                    </div>
-                    {m.department && (
-                      <span className="member-dept-badge">{m.department}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="member-card-actions">
-                  <Dropdown
-                    trigger={
-                      <button
-                        type="button"
-                        className="member-action-trigger"
-                        aria-label="Thao tác"
-                      >
-                        <MoreVertical size={16} />
-                      </button>
-                    }
-                  >
-                    {(close) => (
-                      <>
-                        <button
-                          type="button"
-                          className="member-menu-item"
-                          onClick={() => {
-                            close()
-                            setAssigningMember(m)
-                          }}
-                        >
-                          <FolderPlus size={15} /> Thêm vào dự án…
-                        </button>
-                        <button
-                          type="button"
-                          className="member-menu-item"
-                          onClick={() => {
-                            close()
-                            setEditingMember(m)
-                          }}
-                        >
-                          <Pencil size={15} /> Sửa thông tin
-                        </button>
-                        {!isCurrentUser && (
-                          <button
-                            type="button"
-                            className="member-menu-item member-menu-danger"
-                            onClick={() => {
-                              close()
-                              setDeletingMember(m)
-                            }}
-                          >
-                            <Trash2 size={15} /> Xóa tài khoản
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </Dropdown>
-                </div>
-              </div>
-              <div className="member-card-meta">
-                <div className="member-card-meta-row">
-                  <span className="member-meta-label">Email:</span>
-                  <span className="member-meta-value">{m.email}</span>
-                </div>
-                <div className="member-card-meta-row">
-                  <span className="member-meta-label">Dự án:</span>
-                  <div className="member-meta-value global-member-teams-cell">
-                    {m.teams && m.teams.length > 0 ? (
-                      m.teams.map((t) => (
-                        <span key={t.id} className="global-team-badge">
-                          {t.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="muted">Chưa vào dự án nào</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+                              <button
+                                type="button"
+                                className="member-menu-item"
+                                onClick={() => {
+                                  close()
+                                  setEditingMember(m)
+                                }}
+                              >
+                                <Pencil size={15} /> Sửa thông tin
+                              </button>
+                              {!isCurrentUser && (
+                                <button
+                                  type="button"
+                                  className="member-menu-item member-menu-danger"
+                                  onClick={() => {
+                                    close()
+                                    setDeletingMember(m)
+                                  }}
+                                >
+                                  <Trash2 size={15} /> Xóa tài khoản
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </Dropdown>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Modals con */}
+      {addingToTeam && (
+        <AddTeamMemberDialog
+          team={addingToTeam}
+          repo={repo}
+          onClose={() => setAddingToTeam(null)}
+          onAdded={() => {
+            setAddingToTeam(null)
+            reload()
+            notify(`Đã thêm thành viên vào nhóm "${addingToTeam.name}".`)
+          }}
+          onOpenCreateDirectoryMember={onOpenCreate}
+        />
+      )}
+
       {editingMember && (
         <EditDirectoryMemberDialog
           member={editingMember}
@@ -1134,7 +1519,9 @@ export function GlobalMemberPanel({
           onClose={() => setEditingMember(null)}
           onUpdated={(updated) => {
             setMembers((cur) =>
-              cur.map((m) => (m.user_id === updated.user_id ? { ...m, ...updated } : m)),
+              cur.map((m) =>
+                m.user_id === updated.user_id ? { ...m, ...updated } : m,
+              ),
             )
             setEditingMember(null)
             notify('Đã cập nhật thông tin thành viên.')
@@ -1153,7 +1540,7 @@ export function GlobalMemberPanel({
               cur.map((m) => (m.user_id === updated.user_id ? updated : m)),
             )
             setAssigningMember(null)
-            notify(`Đã thêm ${updated.display_name} vào dự án.`)
+            notify(`Đã thêm ${updated.display_name} vào nhóm.`)
           }}
         />
       )}

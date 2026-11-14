@@ -5995,3 +5995,268 @@ h3 {
   border: 1px solid #fee2e2;
   color: #991b1b;
 }
+
+/* ==========================================================================
+   Member Tree View (Cây phân cấp Team -> Thành viên)
+   ========================================================================== */
+.global-member-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background: #ede9f6;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+.segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: none;
+  background: transparent;
+  color: #554a6c;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.segmented-btn:hover {
+  color: #1e1b26;
+}
+.segmented-btn.active {
+  background: white;
+  color: var(--purple-dark, #4f46e5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.tree-toggle-actions {
+  display: flex;
+  gap: 6px;
+}
+.member-tree-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.member-tree-team-card {
+  background: white;
+  border: 1px solid #e7e1f2;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(35, 17, 72, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.member-tree-team-card:hover {
+  border-color: #d1c4e9;
+}
+.member-tree-team-card.expanded {
+  border-color: #cfc2eb;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.06);
+}
+.member-tree-team-card.unassigned-card {
+  border-style: dashed;
+  background: #faf9fd;
+}
+.member-tree-team-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #fbf9fd;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+.member-tree-team-card.expanded .member-tree-team-header {
+  border-bottom-color: #ede7f6;
+  background: #f8f5fc;
+}
+.member-tree-team-header:hover {
+  background: #f4effa;
+}
+.tree-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: white;
+  border: 1px solid #e2d9f3;
+  border-radius: 6px;
+  color: #6c5a8e;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.tree-collapse-btn:hover {
+  background: #f1edfa;
+  color: var(--purple-dark, #4f46e5);
+  border-color: #cfc0ec;
+}
+.member-tree-team-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.member-tree-team-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ede7f9;
+  color: var(--purple-dark, #4f46e5);
+  flex-shrink: 0;
+}
+.member-tree-team-icon.muted {
+  background: #ede9f3;
+  color: #797188;
+}
+.member-tree-team-title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1b26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.member-tree-count-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e8e0f5;
+  color: #4b3d68;
+}
+.member-tree-count-pill.unassigned {
+  background: #e5e3eb;
+  color: #635b73;
+}
+.member-tree-team-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.member-tree-team-body {
+  padding: 8px 16px 14px 44px;
+  background: white;
+  position: relative;
+}
+/* Đường nhánh cây nối từ team xuống các thành viên */
+.member-tree-team-body::before {
+  content: '';
+  position: absolute;
+  left: 31px;
+  top: 0;
+  bottom: 24px;
+  width: 2px;
+  background: #e8e1f5;
+}
+.member-tree-empty-team {
+  padding: 24px 16px;
+  text-align: center;
+  color: #797188;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.member-tree-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.member-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #f2edf8;
+  background: #fdfcfe;
+  position: relative;
+  transition: all 0.15s ease;
+}
+/* Nhánh ngang nối vào từng member */
+.member-tree-item::before {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: 50%;
+  width: 13px;
+  height: 2px;
+  background: #e8e1f5;
+}
+.member-tree-item:hover {
+  background: #f7f3fd;
+  border-color: #e2d9f3;
+}
+.member-tree-item-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1.5;
+  min-width: 180px;
+}
+.member-tree-item-name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.member-tree-item-name {
+  font-size: 13.5px;
+  color: #1e1b26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.member-tree-item-email {
+  font-size: 12px;
+  color: #797188;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.member-tree-item-dept {
+  flex: 1;
+  min-width: 120px;
+}
+.member-tree-item-role {
+  flex-shrink: 0;
+  min-width: 110px;
+}
+.member-tree-item-actions {
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .member-tree-team-body {
+    padding-left: 18px;
+  }
+  .member-tree-team-body::before,
+  .member-tree-item::before {
+    display: none;
+  }
+  .member-tree-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+  }
+  .member-tree-item-actions {
+    align-self: flex-end;
+  }
+}

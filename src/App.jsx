@@ -277,20 +277,22 @@ function Sidebar({
               </button>
             ))}
           </div>
-          <div className="sidebar-section">
-            <p>QUẢN LÝ CHUNG</p>
-            {Object.entries(commonPages).map(([key, { title, Icon }]) => (
-              <button
-                className={'nav-item' + (view.kind === key ? ' active' : '')}
-                key={key}
-                onClick={() => onNav(key)}
-                aria-current={view.kind === key ? 'page' : undefined}
-              >
-                <Icon size={18} strokeWidth={1.9} />
-                <span>{title}</span>
-              </button>
-            ))}
-          </div>
+          {isOwner && (
+            <div className="sidebar-section">
+              <p>QUẢN LÝ CHUNG</p>
+              {Object.entries(commonPages).map(([key, { title, Icon }]) => (
+                <button
+                  className={'nav-item' + (view.kind === key ? ' active' : '')}
+                  key={key}
+                  onClick={() => onNav(key)}
+                  aria-current={view.kind === key ? 'page' : undefined}
+                >
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{title}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </nav>
         <div className="sidebar-bottom">
           {team && isOwner && (
@@ -1665,14 +1667,16 @@ export default function App({
                       </button>
                     )
                   ) : view.kind === 'allMembers' ? (
-                    <button
-                      className="button hero-primary"
-                      onClick={() =>
-                        setModal({ type: 'create-directory-member' })
-                      }
-                    >
-                      <UserRoundPlus size={18} /> Tạo tài khoản mới
-                    </button>
+                    isOwner && (
+                      <button
+                        className="button hero-primary"
+                        onClick={() =>
+                          setModal({ type: 'create-directory-member' })
+                        }
+                      >
+                        <UserRoundPlus size={18} /> Tạo tài khoản mới
+                      </button>
+                    )
                   ) : view.kind === 'reports' ? (
                     <>
                       <button
@@ -1897,18 +1901,42 @@ export default function App({
               onCreate={() => onCreate('team')}
             />
           )}
-          {view.kind === 'allMembers' && (
-            <GlobalMemberPanel
-              repo={repo}
-              teams={teams}
-              currentUserId={repo.user.id}
-              onOpenCreate={() =>
-                setModal({ type: 'create-directory-member' })
-              }
-              notify={notify}
-              onSwitchTeam={switchTeam}
-            />
-          )}
+          {view.kind === 'allMembers' &&
+            (isOwner ? (
+              <GlobalMemberPanel
+                repo={repo}
+                teams={teams}
+                currentUserId={repo.user.id}
+                onOpenCreate={() =>
+                  setModal({ type: 'create-directory-member' })
+                }
+                onOpenCreateTeam={() => onCreate('team')}
+                notify={notify}
+                onSwitchTeam={switchTeam}
+              />
+            ) : (
+              <div
+                className="panel"
+                style={{
+                  padding: 48,
+                  textAlign: 'center',
+                  background: 'white',
+                  borderRadius: 14,
+                }}
+              >
+                <h3>Giới hạn quyền truy cập</h3>
+                <p className="muted" style={{ margin: '10px 0 20px' }}>
+                  Chỉ có tài khoản trưởng nhóm mới xem được menu Thành viên chung này.
+                </p>
+                <button
+                  type="button"
+                  className="button primary"
+                  onClick={() => go('mine')}
+                >
+                  Quay lại Việc của tôi
+                </button>
+              </div>
+            ))}
         </main>
       </div>
       {modal?.type === 'task' && (
