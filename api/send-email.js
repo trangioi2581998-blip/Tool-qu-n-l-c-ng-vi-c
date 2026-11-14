@@ -55,10 +55,10 @@ function buildHtmlEmail({ subject, body, actionUrl, recipientName }) {
     .map(
       ({ label, val }) => `
         <tr>
-          <td style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#6b7280;font-size:13px;width:36%;vertical-align:top;font-weight:500;">
+          <td bgcolor="#ffffff" style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#6b7280;font-size:13px;width:36%;vertical-align:top;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
             ${escapeHtml(label)}
           </td>
-          <td style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#111827;font-size:13.5px;vertical-align:top;font-weight:600;">
+          <td bgcolor="#ffffff" style="padding:10px 14px;border-bottom:1px solid #f0eef5;color:#111827;font-size:13.5px;vertical-align:top;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
             ${escapeHtml(val)}
           </td>
         </tr>`,
@@ -66,74 +66,103 @@ function buildHtmlEmail({ subject, body, actionUrl, recipientName }) {
     .join('')
 
   return `<!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
   <title>${escapeHtml(subject)}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
     :root { color-scheme: light; }
   </style>
 </head>
-<body style="margin:0;padding:24px 12px;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
-  <div style="max-width:540px;margin:0 auto;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-    <!-- Header -->
-    <div style="background-color:#5a32a3;padding:20px 24px;border-bottom:3px solid #7c4ddb;">
-      <table style="width:100%;border-collapse:collapse;">
-        <tr>
-          <td style="vertical-align:middle;">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;">
-              Nhịp việc · Thông báo công việc
-            </div>
-            <div style="font-size:17px;font-weight:700;line-height:1.35;color:#ffffff;">
-              ${escapeHtml(title)}
-            </div>
-          </td>
-        </tr>
-      </table>
-    </div>
+<body style="margin:0;padding:0;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f5f8" style="width:100%;background-color:#f4f5f8;table-layout:fixed;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <!--[if mso]>
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td>
+        <![endif]-->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;margin:0 auto;background-color:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;" bgcolor="#ffffff">
+          <!-- Header (Outlook compatible: background on td) -->
+          <tr>
+            <td bgcolor="#5a32a3" style="background-color:#5a32a3;padding:22px 24px;border-bottom:3px solid #7c4ddb;color:#ffffff;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                Nhịp việc · Thông báo công việc
+              </div>
+              <div style="font-size:18px;font-weight:700;line-height:1.35;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                ${escapeHtml(title)}
+              </div>
+            </td>
+          </tr>
 
-    <!-- Body content -->
-    <div style="padding:24px 24px 20px 24px;background-color:#ffffff;">
-      <!-- Greeting -->
-      <p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.6;color:#1f2937;">
-        ${greeting}
-      </p>
+          <!-- Body content -->
+          <tr>
+            <td bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 20px 24px;">
+              <!-- Greeting -->
+              <p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.6;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                ${greeting}
+              </p>
 
-      ${
-        highlightNote
-          ? `<div style="margin:0 0 18px 0;padding:12px 16px;background-color:#f7f4fd;border-left:4px solid #6b46c1;border-radius:6px;font-size:13.5px;line-height:1.55;color:#44337a;font-weight:500;">
-              ${escapeHtml(highlightNote)}
-            </div>`
-          : ''
-      }
+              ${
+                highlightNote
+                  ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
+                      <tr>
+                        <td bgcolor="#f7f4fd" style="background-color:#f7f4fd;padding:12px 16px;border-left:4px solid #6b46c1;border-radius:6px;font-size:13.5px;line-height:1.55;color:#44337a;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                          ${escapeHtml(highlightNote)}
+                        </td>
+                      </tr>
+                    </table>`
+                  : ''
+              }
 
-      <!-- Details table -->
-      <table style="width:100%;border-collapse:collapse;background-color:#ffffff;border:1px solid #f0eef5;border-radius:10px;overflow:hidden;margin-bottom:22px;">
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
+              <!-- Details table -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;background-color:#ffffff;border:1px solid #f0eef5;border-radius:10px;margin-bottom:22px;" bgcolor="#ffffff">
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
 
-      <!-- CTA Button -->
-      ${
-        actionUrl
-          ? `<div style="text-align:center;margin:24px 0 8px 0;">
-              <a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 28px;background-color:#5a32a3;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.01em;box-shadow:0 3px 8px rgba(90,50,163,0.25);">
-                Xem chi tiết công việc →
-              </a>
-            </div>`
-          : ''
-      }
-    </div>
+              <!-- CTA Button (Bulletproof email button) -->
+              ${
+                actionUrl
+                  ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto 8px;">
+                      <tr>
+                        <td align="center" bgcolor="#5a32a3" style="background-color:#5a32a3;border-radius:10px;">
+                          <a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 28px;background-color:#5a32a3;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                            Xem chi tiết công việc →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>`
+                  : ''
+              }
+            </td>
+          </tr>
 
-    <!-- Footer -->
-    <div style="padding:14px 24px;background-color:#fafafa;border-top:1px solid #f0f0f0;font-size:12px;color:#8c93a0;text-align:center;line-height:1.5;">
-      Email gửi tự động từ hệ thống <strong>Nhịp việc</strong>. Vui lòng không trả lời trực tiếp email này.
-    </div>
-  </div>
+          <!-- Footer -->
+          <tr>
+            <td bgcolor="#fafafa" align="center" style="background-color:#fafafa;padding:14px 24px;border-top:1px solid #f0f0f0;font-size:12px;color:#8c93a0;text-align:center;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              Email gửi tự động từ hệ thống <strong>Nhịp việc</strong>. Vui lòng không trả lời trực tiếp email này.
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]>
+        </td></tr></table>
+        <![endif]-->
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`
 }
@@ -196,33 +225,45 @@ function sendBatchViaSmtp(settings, messages) {
 
     const buildMime = (msg) => {
       const boundary = '----=_NhipViec_' + Date.now().toString(36) + '_' + msgIdx
-      const domain = (fromEmail.split('@')[1] || 'gmail.com').replace(/[^a-zA-Z0-9.-]/g, '')
-      const msgId = `<${Date.now()}.${msgIdx}.${Math.random().toString(36).slice(2, 10)}@${domain}>`
-      return [
+      const headers = [
         `From: ${encodeHeader(fromName)} <${fromEmail}>`,
+        `Reply-To: <${fromEmail}>`,
         `To: <${msg.to}>`,
         `Subject: ${encodeHeader(msg.subject)}`,
         `Date: ${new Date().toUTCString()}`,
-        `Message-ID: ${msgId}`,
         'MIME-Version: 1.0',
-        `Content-Type: multipart/alternative; boundary="${boundary}"`,
-        '',
-        `--${boundary}`,
-        'Content-Type: text/plain; charset="UTF-8"',
-        'Content-Transfer-Encoding: base64',
-        '',
-        encodeBase64Mime(msg.text),
-        '',
-        `--${boundary}`,
-        'Content-Type: text/html; charset="UTF-8"',
-        'Content-Transfer-Encoding: base64',
-        '',
-        encodeBase64Mime(msg.html),
-        '',
-        `--${boundary}--`,
-        '',
-        '.',
-      ].join('\r\n')
+        'Auto-Submitted: auto-generated',
+        'X-Auto-Response-Suppress: All',
+        'Precedence: bulk',
+      ]
+
+      // If sending via custom SMTP host (not gmail.com), add Message-ID;
+      // When sending via smtp.gmail.com with gmail account, omitting Message-ID allows
+      // Google's SMTP to generate its own authentic, DKIM-aligned Message-ID header.
+      if (!cleanHost.toLowerCase().includes('gmail.com')) {
+        const domain = (fromEmail.split('@')[1] || 'nhipviec.local').replace(/[^a-zA-Z0-9.-]/g, '')
+        const msgId = `<${Date.now()}.${msgIdx}.${Math.random().toString(36).slice(2, 10)}@${domain}>`
+        headers.push(`Message-ID: ${msgId}`)
+      }
+
+      headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`)
+      headers.push('')
+      headers.push(`--${boundary}`)
+      headers.push('Content-Type: text/plain; charset="UTF-8"')
+      headers.push('Content-Transfer-Encoding: base64')
+      headers.push('')
+      headers.push(encodeBase64Mime(msg.text))
+      headers.push('')
+      headers.push(`--${boundary}`)
+      headers.push('Content-Type: text/html; charset="UTF-8"')
+      headers.push('Content-Transfer-Encoding: base64')
+      headers.push('')
+      headers.push(encodeBase64Mime(msg.html))
+      headers.push('')
+      headers.push(`--${boundary}--`)
+      headers.push('')
+      headers.push('.')
+      return headers.join('\r\n')
     }
 
     const startNextMessage = () => {
@@ -237,10 +278,12 @@ function sendBatchViaSmtp(settings, messages) {
       writeCmd(`MAIL FROM:<${fromEmail}>`)
     }
 
+    const ehloHost = cleanHost.toLowerCase().includes('gmail') ? 'mail.gmail.com' : 'localhost'
+
     const handleResponse = (code, fullText) => {
       if (phase === 'GREETING' && code === 220) {
         phase = 'EHLO'
-        writeCmd('EHLO nhipviec.local')
+        writeCmd(`EHLO ${ehloHost}`)
         return
       }
       if (phase === 'EHLO' && code === 250) {
@@ -263,7 +306,7 @@ function sendBatchViaSmtp(settings, messages) {
         socket.encrypted = true
         attachListeners(socket)
         phase = 'EHLO'
-        writeCmd('EHLO nhipviec.local')
+        writeCmd(`EHLO ${ehloHost}`)
         return
       }
       if (phase === 'AUTH' && code === 334) {

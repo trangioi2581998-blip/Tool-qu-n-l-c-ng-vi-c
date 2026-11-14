@@ -1377,13 +1377,13 @@ function buildReportHtmlEmail({
         <tr>
           ${
             levIdx === 0
-              ? `<td rowspan="${levelCount}" style="padding:10px 12px;font-weight:700;vertical-align:top;border:1px solid #e4def0;background:#faf8fd;color:#281b4d;font-size:13px;">${escapeHtml(sec.label)}</td>`
+              ? `<td rowspan="${levelCount}" bgcolor="#faf8fd" style="padding:10px 12px;font-weight:700;vertical-align:top;border:1px solid #e4def0;background-color:#faf8fd;color:#281b4d;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${escapeHtml(sec.label)}</td>`
               : ''
           }
-          <td style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;color:#374151;font-size:13px;">${escapeHtml(lev.label || '—')}</td>
-          <td style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;color:#111827;font-size:13.5px;">${curCount}</td>
-          <td style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;color:${diffColor};font-size:13.5px;">${diffText}</td>
-          <td style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;">${detailsHtml}</td>
+          <td bgcolor="#ffffff" style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;background-color:#ffffff;color:#374151;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${escapeHtml(lev.label || '—')}</td>
+          <td bgcolor="#ffffff" style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;background-color:#ffffff;color:#111827;font-size:13.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${curCount}</td>
+          <td bgcolor="#ffffff" style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;background-color:#ffffff;color:${diffColor};font-size:13.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${diffText}</td>
+          <td bgcolor="#ffffff" style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${detailsHtml}</td>
         </tr>
       `
     })
@@ -1391,89 +1391,130 @@ function buildReportHtmlEmail({
 
   const noteBlock = note?.trim()
     ? `
-    <div style="background:#f6f2fe;border-left:4px solid #7c4ddb;padding:12px 16px;border-radius:6px;margin:16px 0 20px;font-size:13px;line-height:1.55;color:#3b246a;">
-      <strong>Lời nhắn kèm theo:</strong> ${escapeHtml(note.trim())}
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+      <tr>
+        <td bgcolor="#f6f2fe" style="background-color:#f6f2fe;border-left:4px solid #7c4ddb;padding:12px 16px;border-radius:6px;font-size:13px;line-height:1.55;color:#3b246a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+          <strong>Lời nhắn kèm theo:</strong> ${escapeHtml(note.trim())}
+        </td>
+      </tr>
+    </table>
   `
     : ''
 
   return `<!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>Báo cáo trạng thái & tiến độ công việc</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    :root { color-scheme: light; }
+  </style>
 </head>
-<body style="margin:0;padding:24px 12px;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
-  <div style="max-width:880px;margin:0 auto;background-color:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #ded8eb;box-shadow:0 4px 20px rgba(40,25,81,0.06);">
-    <!-- Header banner -->
-    <div style="background:#4e3596;padding:22px 24px;border-bottom:3px solid #6c47bf;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;">
-        Nhịp việc · Báo cáo công việc
-      </div>
-      <div style="font-size:20px;font-weight:700;line-height:1.35;color:#ffffff;">
-        Báo cáo trạng thái & tiến độ công việc
-      </div>
-      <div style="font-size:12.5px;color:#d8ccf5;margin-top:4px;">
-        Đánh giá tiến độ dựa vào Ngày giao và Hạn hoàn thành lũy kế đến ngày <strong>${escapeHtml(cutoffDateLabel)}</strong>, đối chiếu với <strong>${escapeHtml(compareLabel.toLowerCase())}</strong>
-      </div>
-    </div>
-
-    <!-- Metadata & Note -->
-    <div style="padding:18px 24px 12px;background:#fbfaff;border-bottom:1px solid #eee8f8;">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr>
-          <td style="padding:4px 0;width:50%;color:#4b5563;">
-            <span style="color:#6b7280;">Kỳ báo cáo:</span> <strong style="color:#1e1438;">${escapeHtml(targetLabel)} (${escapeHtml(targetBounds.rangeLabel)})</strong>
-          </td>
-          <td style="padding:4px 0;width:50%;color:#4b5563;">
-            <span style="color:#6b7280;">Đối chiếu với:</span> <strong style="color:#1e1438;">${escapeHtml(compareLabel)} (${escapeHtml(compareBounds.rangeLabel)})</strong>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:4px 0;color:#4b5563;">
-            <span style="color:#6b7280;">Nhân sự lọc:</span> <strong style="color:#1e1438;">${escapeHtml(memberFilterLabel)}</strong>
-          </td>
-          <td style="padding:4px 0;color:#4b5563;">
-            <span style="color:#6b7280;">Người gửi:</span> <strong style="color:#1e1438;">${escapeHtml(senderName || 'Trưởng nhóm')}</strong>
-          </td>
-        </tr>
-      </table>
-      ${noteBlock}
-    </div>
-
-    <!-- Main Table -->
-    <div style="padding:20px 24px;overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;border:1px solid #dcd5ec;font-size:13px;">
-        <thead>
-          <tr style="background:#4e3596;color:#ffffff;font-size:12.5px;">
-            <th style="padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Trạng thái công việc</th>
-            <th style="padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Mức độ hoàn thành</th>
-            <th style="padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;">Số lượng lũy kế đến ${escapeHtml(cutoffDateLabel)}</th>
-            <th style="padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;">So sánh với ${escapeHtml(compareLabel)}</th>
-            <th style="padding:10px 12px;width:36%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Chi tiết Đầu mục công việc thay đổi trạng thái</th>
+<body style="margin:0;padding:0;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f5f8" style="width:100%;background-color:#f4f5f8;table-layout:fixed;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <!--[if mso]>
+        <table role="presentation" width="860" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td>
+        <![endif]-->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:880px;width:100%;margin:0 auto;background-color:#ffffff;border:1px solid #ded8eb;border-radius:14px;overflow:hidden;" bgcolor="#ffffff">
+          <!-- Header banner (Outlook compatible: bgcolor on td) -->
+          <tr>
+            <td bgcolor="#4e3596" style="background-color:#4e3596;padding:22px 24px;border-bottom:3px solid #6c47bf;color:#ffffff;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                Nhịp việc · Báo cáo công việc
+              </div>
+              <div style="font-size:20px;font-weight:700;line-height:1.35;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                Báo cáo trạng thái & tiến độ công việc
+              </div>
+              <div style="font-size:12.5px;color:#d8ccf5;margin-top:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                Đánh giá tiến độ dựa vào Ngày giao và Hạn hoàn thành lũy kế đến ngày <strong>${escapeHtml(cutoffDateLabel)}</strong>, đối chiếu với <strong>${escapeHtml(compareLabel.toLowerCase())}</strong>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-        <tfoot>
-          <tr style="background:#f4effc;font-weight:700;border-top:2px solid #6b46c1;">
-            <td colspan="2" style="padding:12px;border:1px solid #e4def0;color:#281b4d;font-size:13.5px;">Tổng công việc</td>
-            <td style="padding:12px 8px;text-align:center;border:1px solid #e4def0;color:#111827;font-size:14px;">${targetMatrix.totalActive}</td>
-            <td style="padding:12px 8px;text-align:center;border:1px solid #e4def0;color:${totalDiffColor};font-size:14px;">${totalDiffText}</td>
-            <td style="padding:12px;border:1px solid #e4def0;"></td>
-          </tr>
-        </tfoot>
-      </table>
 
-      <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px dashed #e2daf0;">
-        <a href="${actionUrl}" style="display:inline-block;padding:11px 24px;background:#6745d6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13.5px;">
-          Mở Nhịp việc để xem chi tiết →
-        </a>
-      </div>
-    </div>
-  </div>
+          <!-- Metadata & Note -->
+          <tr>
+            <td bgcolor="#fbfaff" style="background-color:#fbfaff;padding:18px 24px 14px;border-bottom:1px solid #eee8f8;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                <tr>
+                  <td style="padding:4px 0;width:50%;color:#4b5563;">
+                    <span style="color:#6b7280;">Kỳ báo cáo:</span> <strong style="color:#1e1438;">${escapeHtml(targetLabel)} (${escapeHtml(targetBounds.rangeLabel)})</strong>
+                  </td>
+                  <td style="padding:4px 0;width:50%;color:#4b5563;">
+                    <span style="color:#6b7280;">Đối chiếu với:</span> <strong style="color:#1e1438;">${escapeHtml(compareLabel)} (${escapeHtml(compareBounds.rangeLabel)})</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;color:#4b5563;">
+                    <span style="color:#6b7280;">Nhân sự lọc:</span> <strong style="color:#1e1438;">${escapeHtml(memberFilterLabel)}</strong>
+                  </td>
+                  <td style="padding:4px 0;color:#4b5563;">
+                    <span style="color:#6b7280;">Người gửi:</span> <strong style="color:#1e1438;">${escapeHtml(senderName || 'Trưởng nhóm')}</strong>
+                  </td>
+                </tr>
+              </table>
+              ${noteBlock}
+            </td>
+          </tr>
+
+          <!-- Main Table Section -->
+          <tr>
+            <td bgcolor="#ffffff" style="background-color:#ffffff;padding:20px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #dcd5ec;font-size:13px;" bgcolor="#ffffff">
+                <thead>
+                  <tr>
+                    <th bgcolor="#4e3596" style="background-color:#4e3596;color:#ffffff;padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Trạng thái công việc</th>
+                    <th bgcolor="#4e3596" style="background-color:#4e3596;color:#ffffff;padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Mức độ hoàn thành</th>
+                    <th bgcolor="#4e3596" style="background-color:#4e3596;color:#ffffff;padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Số lượng lũy kế đến ${escapeHtml(cutoffDateLabel)}</th>
+                    <th bgcolor="#4e3596" style="background-color:#4e3596;color:#ffffff;padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">So sánh với ${escapeHtml(compareLabel)}</th>
+                    <th bgcolor="#4e3596" style="background-color:#4e3596;color:#ffffff;padding:10px 12px;width:36%;text-align:left;border:1px solid #5d42ab;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Chi tiết Đầu mục công việc thay đổi trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" bgcolor="#f4effc" style="background-color:#f4effc;padding:12px;border:1px solid #e4def0;color:#281b4d;font-size:13.5px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">Tổng công việc</td>
+                    <td bgcolor="#f4effc" style="background-color:#f4effc;padding:12px 8px;text-align:center;border:1px solid #e4def0;color:#111827;font-size:14px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${targetMatrix.totalActive}</td>
+                    <td bgcolor="#f4effc" style="background-color:#f4effc;padding:12px 8px;text-align:center;border:1px solid #e4def0;color:${totalDiffColor};font-size:14px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${totalDiffText}</td>
+                    <td bgcolor="#f4effc" style="background-color:#f4effc;padding:12px;border:1px solid #e4def0;"></td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <!-- CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto 0;">
+                <tr>
+                  <td align="center" bgcolor="#6745d6" style="background-color:#6745d6;border-radius:8px;">
+                    <a href="${actionUrl}" style="display:inline-block;padding:11px 24px;background-color:#6745d6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                      Mở Nhịp việc để xem chi tiết →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]>
+        </td></tr></table>
+        <![endif]-->
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`
 }
