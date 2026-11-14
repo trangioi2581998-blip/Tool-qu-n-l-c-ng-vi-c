@@ -916,15 +916,26 @@ export function createBackend(authUser) {
           .eq('user_id', userId)
       } catch {}
 
+      // Cập nhật work_members qua RPC work_update_member (security definer)
       try {
-        await client
+        const { data: memberRows } = await client
           .from('work_members')
-          .update({
-            display_name: fields.display_name || fields.name,
-            email: fields.email,
-            department: fields.department || '',
-          })
+          .select('team_id,user_id')
           .eq('user_id', userId)
+        if (Array.isArray(memberRows)) {
+          for (const row of memberRows) {
+            try {
+              await client.rpc('work_update_member', {
+                target_team: row.team_id,
+                target_user: row.user_id,
+                member_name: fields.display_name || fields.name,
+                member_email: fields.email,
+                member_department: fields.department || '',
+                member_password: fields.password || null,
+              })
+            } catch {}
+          }
+        }
       } catch {}
 
       return {
@@ -971,13 +982,27 @@ export function createBackend(authUser) {
         console.warn('Query work_departments error:', e)
       }
 
-      // Đảm bảo các phòng ban thực tế từ work_directory_members cũng được hiển thị
+      // Đảm bảo các phòng ban thực tế từ work_directory_members và work_members cũng được hiển thị
       try {
         const { data: memList } = await client
           .from('work_directory_members')
           .select('department')
         if (Array.isArray(memList)) {
           for (const m of memList) {
+            const name = (m.department || '').trim()
+            if (name && !map.has(name)) {
+              map.set(name, { id: name, name, description: '' })
+            }
+          }
+        }
+      } catch {}
+
+      try {
+        const { data: wmList } = await client
+          .from('work_members')
+          .select('department')
+        if (Array.isArray(wmList)) {
+          for (const m of wmList) {
             const name = (m.department || '').trim()
             if (name && !map.has(name)) {
               map.set(name, { id: name, name, description: '' })
@@ -1039,10 +1064,27 @@ export function createBackend(authUser) {
           .from('work_directory_members')
           .update({ department: cleanNew })
           .eq('department', cleanOld)
-        await client
+      } catch {}
+
+      // Cập nhật các nhân sự thuộc phòng ban cũ qua work_update_member RPC
+      try {
+        const { data: mems } = await client
           .from('work_members')
-          .update({ department: cleanNew })
+          .select('team_id,user_id,display_name,email')
           .eq('department', cleanOld)
+        if (Array.isArray(mems)) {
+          for (const m of mems) {
+            try {
+              await client.rpc('work_update_member', {
+                target_team: m.team_id,
+                target_user: m.user_id,
+                member_name: m.display_name,
+                member_email: m.email,
+                member_department: cleanNew,
+              })
+            } catch {}
+          }
+        }
       } catch {}
 
       return { id: cleanNew, name: cleanNew, description: description || '' }
@@ -1064,10 +1106,27 @@ export function createBackend(authUser) {
           .from('work_directory_members')
           .update({ department: '' })
           .eq('department', cleanName)
-        await client
+      } catch {}
+
+      // Giải phóng nhân sự về chưa phân phòng ban qua work_update_member RPC
+      try {
+        const { data: mems } = await client
           .from('work_members')
-          .update({ department: '' })
+          .select('team_id,user_id,display_name,email')
           .eq('department', cleanName)
+        if (Array.isArray(mems)) {
+          for (const m of mems) {
+            try {
+              await client.rpc('work_update_member', {
+                target_team: m.team_id,
+                target_user: m.user_id,
+                member_name: m.display_name,
+                member_email: m.email,
+                member_department: '',
+              })
+            } catch {}
+          }
+        }
       } catch {}
     },
     async assignMemberDepartment(userId, departmentName) {
@@ -1089,7 +1148,39 @@ export function createBackend(authUser) {
         console.warn('RPC work_assign_member_department exception:', e)
       }
 
-      // 2. Dự phòng: Thử RPC work_update_directory_member (đã có sẵn trong Supabase từ trước)
+      // 2. Dự phòng: Cập nhật qua RPC work_update_member CÓ SẴN TRONG SUPABASE!
+      // RPC này là SECURITY DEFINER, cho phép trưởng nhóm cập nhật department của member trong work_members
+      try {
+        const { data: memberRows } = await client
+          .from('work_members')
+          .select('team_id,user_id,display_name,email')
+          .eq('user_id', userId)
+
+        if (Array.isArray(memberRows) && memberRows.length > 0) {
+          for (const row of memberRows) {
+            try {
+              const resUpdate = await client.rpc('work_update_member', {
+                target_team: row.team_id,
+                target_user: row.user_id,
+                member_name: row.display_name,
+                member_email: row.email,
+                member_department: cleanDept,
+              })
+              if (!resUpdate.error) {
+                updated = true
+              } else {
+                console.warn('RPC work_update_member error:', resUpdate.error)
+              }
+            } catch (err) {
+              console.warn('RPC work_update_member exception:', err)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Query work_members error:', e)
+      }
+
+      // 3. Dự phòng: Thử RPC work_update_directory_member (nếu có)
       if (!updated) {
         try {
           const { data: cur } = await client
@@ -1107,27 +1198,18 @@ export function createBackend(authUser) {
             })
             if (!res2.error) updated = true
           }
-        } catch (e) {
-          console.warn('RPC work_update_directory_member fallback error:', e)
-        }
+        } catch (e) {}
       }
 
-      // 3. Dự phòng trực tiếp: Cập nhật trực tiếp các bảng
+      // 4. Nếu có bảng work_directory_members thì cập nhật thêm
       try {
-        const p1 = client
+        await client
           .from('work_directory_members')
           .update({ department: cleanDept })
           .eq('user_id', userId)
-        const p2 = client
-          .from('work_members')
-          .update({ department: cleanDept })
-          .eq('user_id', userId)
-        await Promise.allSettled([p1, p2])
-      } catch (e) {
-        console.warn('Direct update department error:', e)
-      }
+      } catch {}
 
-      // 4. Nếu có phòng ban mới, đảm bảo tồn tại trong bảng work_departments
+      // 5. Nếu có bảng work_departments thì lưu tên phòng ban
       if (cleanDept) {
         try {
           await client

@@ -991,9 +991,18 @@ export function DepartmentPanel({
             setMembers((cur) =>
               cur.map((m) => (m.user_id === userId ? { ...m, department: targetDept } : m)),
             )
+            if (targetDept) {
+              setDepartments((cur) => {
+                if (cur.some((d) => d.name === targetDept)) return cur
+                return [...cur, { id: targetDept, name: targetDept, description: '' }].sort((a, b) =>
+                  a.name.localeCompare(b.name),
+                )
+              })
+              setExpandedDeptNames((cur) => new Set([...cur, targetDept]))
+            }
             setTimeout(() => {
               reload()
-            }, 350)
+            }, 400)
             notify('Đã cập nhật phòng ban cho nhân sự.')
           }}
         />
