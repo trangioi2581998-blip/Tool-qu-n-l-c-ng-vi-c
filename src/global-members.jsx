@@ -980,33 +980,11 @@ export function GlobalMemberPanel({
                       type="button"
                       className="button secondary sm"
                       onClick={() => setAddingToTeam(t)}
-                      title="Thêm thành viên từ danh bạ chung vào nhóm này"
+                      title="Thêm thành viên vào dự án này"
                     >
                       <UserPlus size={14} />
                       <span className="btn-label-desktop">Thêm thành viên</span>
                     </button>
-                    {onEditTeam && (
-                      <button
-                        type="button"
-                        className="button ghost sm"
-                        onClick={() => onEditTeam(t)}
-                        title="Chỉnh sửa tên dự án"
-                      >
-                        <Pencil size={14} />
-                        <span className="btn-label-desktop">Sửa tên dự án</span>
-                      </button>
-                    )}
-                    {onSwitchTeam && (
-                      <button
-                        type="button"
-                        className="button ghost sm"
-                        onClick={() => onSwitchTeam(t.id)}
-                        title="Vào dự án này"
-                      >
-                        <ExternalLink size={14} />
-                        <span className="btn-label-desktop">Vào dự án</span>
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -1088,8 +1066,8 @@ export function GlobalMemberPanel({
                                 </span>
                               </div>
 
-                              {role !== 'owner' && (
-                                <div className="member-tree-item-actions">
+                              <div className="member-tree-item-actions">
+                                {role !== 'owner' && (
                                   <Dropdown
                                     label={`Thao tác với ${m.display_name}`}
                                     className="action-dropdown member-action-dropdown"
@@ -1144,8 +1122,8 @@ export function GlobalMemberPanel({
                                       </>
                                     )}
                                   </Dropdown>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
                           )
                         })}
