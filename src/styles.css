@@ -6267,6 +6267,7 @@ h3 {
 }
 .member-tree-item-actions {
   flex-shrink: 0;
+  margin-left: auto;
 }
 @media (max-width: 768px) {
   .member-tree-team-body {

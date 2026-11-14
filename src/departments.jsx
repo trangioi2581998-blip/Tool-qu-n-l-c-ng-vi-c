@@ -799,28 +799,6 @@ export function DepartmentPanel({
                                 </div>
                               </div>
 
-                              <div className="member-tree-item-dept">
-                                <div className="global-member-teams-cell">
-                                  {m.teams && m.teams.length > 0 ? (
-                                    m.teams.map((t) => (
-                                      <span
-                                        key={t.id}
-                                        className="global-team-badge"
-                                        title={`Nhóm: ${t.name}`}
-                                        onClick={() => onSwitchTeam?.(t.id)}
-                                      >
-                                        <Briefcase size={11} />
-                                        {t.name}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span className="muted text-xs">
-                                      Chưa vào nhóm dự án
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
                               <div className="member-tree-item-actions">
                                 <Dropdown
                                   label={`Thao tác với ${m.display_name}`}
@@ -938,10 +916,6 @@ export function DepartmentPanel({
                                 {m.email}
                               </span>
                             </div>
-                          </div>
-
-                          <div className="member-tree-item-dept">
-                            <span className="muted text-xs">Chưa phân phòng</span>
                           </div>
 
                           <div className="member-tree-item-actions">
