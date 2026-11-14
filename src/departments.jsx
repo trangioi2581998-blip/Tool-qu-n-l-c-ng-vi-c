@@ -628,51 +628,6 @@ export function DepartmentPanel({
             </button>
           )}
         </div>
-
-        <div className="global-member-controls">
-          <div className="tree-toggle-actions">
-            <button
-              type="button"
-              className="button secondary sm icon-only-mobile"
-              onClick={expandAll}
-              title="Mở rộng tất cả các phòng ban"
-            >
-              <ChevronsUpDown size={14} />
-              <span className="btn-label-desktop">Mở tất cả</span>
-            </button>
-            <button
-              type="button"
-              className="button secondary sm icon-only-mobile"
-              onClick={collapseAll}
-              title="Thu gọn tất cả các phòng ban"
-            >
-              <ChevronsDownUp size={14} />
-              <span className="btn-label-desktop">Thu gọn</span>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="button secondary sm icon-only-mobile"
-            onClick={reload}
-            title="Tải lại danh sách"
-          >
-            <RefreshCw size={15} className={loading ? 'spin' : ''} />
-            <span className="btn-label-desktop">Làm mới</span>
-          </button>
-
-          {onOpenCreateDept && (
-            <button
-              type="button"
-              className="button secondary sm icon-only-mobile"
-              onClick={onOpenCreateDept}
-              title="Thêm phòng ban mới"
-            >
-              <Plus size={15} />
-              <span className="btn-label-desktop">Thêm phòng ban</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Thông tin số lượng */}

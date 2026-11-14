@@ -6059,9 +6059,9 @@ h3 {
   position: relative;
   background: white;
   border: 1px solid #e7e1f2;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: visible;
-  box-shadow: 0 1px 3px rgba(35, 17, 72, 0.03);
+  box-shadow: 0 1px 3px rgba(35, 17, 72, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .member-tree-team-card:has(details[open]),
@@ -6086,15 +6086,15 @@ h3 {
   padding: 13px 18px;
   background: #fbf9fd;
   border-bottom: 1px solid transparent;
-  border-top-left-radius: 11px;
-  border-top-right-radius: 11px;
+  border-top-left-radius: 13px;
+  border-top-right-radius: 13px;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.15s ease;
 }
 .member-tree-team-card:not(.expanded) .member-tree-team-header {
-  border-bottom-left-radius: 11px;
-  border-bottom-right-radius: 11px;
+  border-bottom-left-radius: 13px;
+  border-bottom-right-radius: 13px;
 }
 .member-tree-team-card.expanded .member-tree-team-header {
   border-bottom-color: #ede7f6;
@@ -6175,6 +6175,8 @@ h3 {
   padding: 12px 18px 16px 46px;
   background: white;
   position: relative;
+  border-bottom-left-radius: 13px;
+  border-bottom-right-radius: 13px;
 }
 /* Đường nhánh cây nối từ team xuống các thành viên */
 .member-tree-team-body::before {
@@ -6195,6 +6197,8 @@ h3 {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  border-bottom-left-radius: 13px;
+  border-bottom-right-radius: 13px;
 }
 .member-tree-list {
   display: flex;
