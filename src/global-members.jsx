@@ -7,6 +7,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   Crown,
+  Ellipsis,
   ExternalLink,
   FolderKanban,
   FolderOpen,
@@ -1171,15 +1172,9 @@ export function GlobalMemberPanel({
 
                               <div className="member-tree-item-actions">
                                 <Dropdown
-                                  trigger={
-                                    <button
-                                      type="button"
-                                      className="member-action-trigger"
-                                      aria-label={`Thao tác với ${m.display_name}`}
-                                    >
-                                      <MoreVertical size={16} />
-                                    </button>
-                                  }
+                                  label={`Thao tác với ${m.display_name}`}
+                                  className="action-dropdown member-action-dropdown"
+                                  trigger={<Ellipsis size={18} />}
                                 >
                                   {(close) => (
                                     <>
@@ -1440,15 +1435,9 @@ export function GlobalMemberPanel({
                       </td>
                       <td className="member-col-actions">
                         <Dropdown
-                          trigger={
-                            <button
-                              type="button"
-                              className="member-action-trigger"
-                              aria-label={`Thao tác với ${m.display_name}`}
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-                          }
+                          label={`Thao tác với ${m.display_name}`}
+                          className="action-dropdown member-action-dropdown"
+                          trigger={<Ellipsis size={18} />}
                         >
                           {(close) => (
                             <>

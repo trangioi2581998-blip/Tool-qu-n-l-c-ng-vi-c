@@ -145,3 +145,4 @@ begin
 end;
 $$;
 grant execute on function public.work_assign_member_department(uuid, text) to authenticated;
+

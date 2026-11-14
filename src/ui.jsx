@@ -223,7 +223,13 @@ export function Empty({ title, detail, onAdd, action = 'Tạo công việc' }) {
     </div>
   )
 }
-export function Dropdown({ label, children, trigger, className = '' }) {
+export function Dropdown({
+  label,
+  children,
+  trigger,
+  className = '',
+  hideChevron = false,
+}) {
   const ref = useRef(null)
   const [isDropUp, setIsDropUp] = useState(false)
   useEffect(() => {
@@ -256,15 +262,20 @@ export function Dropdown({ label, children, trigger, className = '' }) {
     }
   }
 
+  const noChevron =
+    hideChevron ||
+    className.includes('action-dropdown') ||
+    className.includes('no-chevron')
+
   return (
     <details
       ref={ref}
       onToggle={handleToggle}
       className={'dropdown ' + className + (isDropUp ? ' drop-up' : '')}
     >
-      <summary aria-label={label}>
+      <summary aria-label={label} title={label || undefined}>
         {trigger}
-        <ChevronDown className="dropdown-chevron" size={15} />
+        {!noChevron && <ChevronDown className="dropdown-chevron" size={15} />}
       </summary>
       <div className="dropdown-panel">
         {children(() => {

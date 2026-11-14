@@ -6289,3 +6289,103 @@ h3 {
     padding: 14px 12px 18px;
   }
 }
+
+/* ==========================================================================
+   Member Action Dropdown & Menu Items
+   ========================================================================== */
+.member-tree-item-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.action-dropdown.member-action-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.action-dropdown.member-action-dropdown > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e5dfef;
+  background: #ffffff;
+  color: #635b75;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(35, 17, 72, 0.04);
+}
+
+.action-dropdown.member-action-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-dropdown.member-action-dropdown > summary:hover {
+  background: #f3effc;
+  color: var(--purple-dark, #5533c7);
+  border-color: #cfc2eb;
+  box-shadow: 0 2px 6px rgba(101, 68, 216, 0.14);
+  transform: translateY(-1px);
+}
+
+.action-dropdown.member-action-dropdown[open] > summary {
+  background: #ece5fa;
+  color: var(--purple-dark, #5533c7);
+  border-color: #bfade8;
+  box-shadow: 0 2px 6px rgba(101, 68, 216, 0.18);
+}
+
+.action-dropdown.member-action-dropdown > summary .dropdown-chevron {
+  display: none !important;
+}
+
+.member-action-dropdown .dropdown-panel {
+  right: 0;
+  left: auto;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #ebe5f5;
+  box-shadow: 0 10px 30px rgba(46, 28, 83, 0.16);
+  z-index: 20;
+}
+
+.member-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #332d46;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.member-menu-item:hover {
+  background: #f4effe;
+  color: #5533c7;
+}
+
+.member-menu-item.text-danger {
+  color: #d13232;
+}
+
+.member-menu-item.text-danger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+

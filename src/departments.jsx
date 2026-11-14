@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
+  Ellipsis,
   ExternalLink,
   MoreVertical,
   Pencil,
@@ -822,15 +823,9 @@ export function DepartmentPanel({
 
                               <div className="member-tree-item-actions">
                                 <Dropdown
-                                  trigger={
-                                    <button
-                                      type="button"
-                                      className="member-action-trigger"
-                                      aria-label="Thao tác"
-                                    >
-                                      <MoreVertical size={16} />
-                                    </button>
-                                  }
+                                  label={`Thao tác với ${m.display_name}`}
+                                  className="action-dropdown member-action-dropdown"
+                                  trigger={<Ellipsis size={18} />}
                                 >
                                   {(close) => (
                                     <>
@@ -1042,3 +1037,4 @@ export function DepartmentPanel({
     </section>
   )
 }
+
