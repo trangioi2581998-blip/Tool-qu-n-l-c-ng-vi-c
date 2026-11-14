@@ -403,33 +403,53 @@ export function createBackend(authUser) {
     },
     async renameTeam(teamId, newName) {
       const trimmed = newName.trim()
+      let rpcErr = null
       try {
         const res = await client.rpc('work_rename_team', {
           target_team: teamId,
           new_name: trimmed,
         })
-        if (res?.error) throw res.error
+        if (!res?.error) {
+          return { id: teamId, name: trimmed }
+        }
+        rpcErr = res.error
       } catch (err) {
-        const { error } = await client
-          .from('work_teams')
-          .update({ name: trimmed })
-          .eq('id', teamId)
-        if (error) throw err || error
+        rpcErr = err
+      }
+
+      // Fallback: Thử update trực tiếp vào bảng work_teams
+      const { error: updateErr } = await client
+        .from('work_teams')
+        .update({ name: trimmed })
+        .eq('id', teamId)
+      if (updateErr) {
+        throw updateErr.code === '42501' || rpcErr?.code === 'PGRST202'
+          ? new Error('Chưa cấp quyền đổi tên dự án. Hãy chạy file "supabase/fix-rename-team.sql" trong SQL Editor của Supabase.')
+          : (updateErr || rpcErr)
       }
       return { id: teamId, name: trimmed }
     },
     async deleteTeam(teamId) {
+      let rpcErr = null
       try {
         const res = await client.rpc('work_delete_team', {
           target_team: teamId,
         })
-        if (res?.error) throw res.error
+        if (!res?.error) return
+        rpcErr = res.error
       } catch (err) {
-        const { error } = await client
-          .from('work_teams')
-          .delete()
-          .eq('id', teamId)
-        if (error) throw err || error
+        rpcErr = err
+      }
+
+      // Fallback: Thử xóa trực tiếp bảng work_teams
+      const { error: delErr } = await client
+        .from('work_teams')
+        .delete()
+        .eq('id', teamId)
+      if (delErr) {
+        throw delErr.code === '42501' || rpcErr?.code === 'PGRST202'
+          ? new Error('Chưa cấp quyền xóa dự án. Hãy chạy file "supabase/fix-rename-team.sql" trong SQL Editor của Supabase.')
+          : (delErr || rpcErr)
       }
     },
     async transferOwner(teamId, newOwnerId) {
