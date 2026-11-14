@@ -6055,12 +6055,17 @@ h3 {
   gap: 14px;
 }
 .member-tree-team-card {
+  position: relative;
   background: white;
   border: 1px solid #e7e1f2;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(35, 17, 72, 0.03);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.member-tree-team-card:has(details[open]),
+.member-tree-team-card:focus-within {
+  z-index: 60 !important;
 }
 .member-tree-team-card:hover {
   border-color: #d1c4e9;
@@ -6080,9 +6085,15 @@ h3 {
   padding: 13px 18px;
   background: #fbf9fd;
   border-bottom: 1px solid transparent;
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.15s ease;
+}
+.member-tree-team-card:not(.expanded) .member-tree-team-header {
+  border-bottom-left-radius: 11px;
+  border-bottom-right-radius: 11px;
 }
 .member-tree-team-card.expanded .member-tree-team-header {
   border-bottom-color: #ede7f6;
@@ -6199,6 +6210,11 @@ h3 {
   background: #fdfcfe;
   position: relative;
   transition: all 0.15s ease;
+  overflow: visible;
+}
+.member-tree-item:has(details[open]),
+.member-tree-item:focus-within {
+  z-index: 70 !important;
 }
 /* Nhánh ngang nối vào từng member */
 .member-tree-item::before {
@@ -6335,6 +6351,11 @@ h3 {
   transform: translateY(-1px);
 }
 
+.action-dropdown.member-action-dropdown[open] {
+  z-index: 100 !important;
+  position: relative;
+}
+
 .action-dropdown.member-action-dropdown[open] > summary {
   background: #ece5fa;
   color: var(--purple-dark, #5533c7);
@@ -6353,8 +6374,9 @@ h3 {
   padding: 6px;
   border-radius: 10px;
   border: 1px solid #ebe5f5;
-  box-shadow: 0 10px 30px rgba(46, 28, 83, 0.16);
-  z-index: 20;
+  box-shadow: 0 12px 32px rgba(46, 28, 83, 0.22);
+  z-index: 1000 !important;
+  background: #ffffff;
 }
 
 .member-menu-item {

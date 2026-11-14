@@ -832,9 +832,10 @@ export function DepartmentPanel({
                                       <button
                                         type="button"
                                         className="member-menu-item"
-                                        onClick={() => {
-                                          close()
+                                        onClick={(e) => {
+                                          e.stopPropagation()
                                           setAssigningMember(m)
+                                          close()
                                         }}
                                       >
                                         <Building2 size={15} /> Chuyển phòng ban khác…
@@ -842,9 +843,10 @@ export function DepartmentPanel({
                                       <button
                                         type="button"
                                         className="member-menu-item"
-                                        onClick={() => {
-                                          close()
+                                        onClick={(e) => {
+                                          e.stopPropagation()
                                           setEditingMember(m)
+                                          close()
                                         }}
                                       >
                                         <Pencil size={15} /> Sửa thông tin tài khoản
@@ -852,9 +854,10 @@ export function DepartmentPanel({
                                       <button
                                         type="button"
                                         className="member-menu-item text-danger"
-                                        onClick={() => {
-                                          close()
+                                        onClick={(e) => {
+                                          e.stopPropagation()
                                           handleRemoveFromDept(m)
+                                          close()
                                         }}
                                       >
                                         <UserMinus size={15} /> Gỡ khỏi phòng ban này
@@ -1014,7 +1017,9 @@ export function DepartmentPanel({
             setMembers((cur) =>
               cur.map((m) => (m.user_id === userId ? { ...m, department: targetDept } : m)),
             )
-            reload()
+            setTimeout(() => {
+              reload()
+            }, 350)
             notify('Đã cập nhật phòng ban cho nhân sự.')
           }}
         />

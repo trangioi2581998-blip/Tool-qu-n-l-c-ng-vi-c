@@ -1072,26 +1072,69 @@ export function createBackend(authUser) {
     },
     async assignMemberDepartment(userId, departmentName) {
       const cleanDept = (departmentName || '').trim()
+      let updated = false
+
+      // 1. Thử RPC work_assign_member_department (từ migration phòng ban)
       try {
         const res = await client.rpc('work_assign_member_department', {
           target_user: userId,
           new_dept: cleanDept,
         })
-        if (!res.error) return
+        if (!res.error) {
+          updated = true
+        } else {
+          console.warn('RPC work_assign_member_department error:', res.error)
+        }
       } catch (e) {
-        console.warn('work_assign_member_department RPC error:', e)
+        console.warn('RPC work_assign_member_department exception:', e)
       }
 
+      // 2. Dự phòng: Thử RPC work_update_directory_member (đã có sẵn trong Supabase từ trước)
+      if (!updated) {
+        try {
+          const { data: cur } = await client
+            .from('work_directory_members')
+            .select('display_name,email')
+            .eq('user_id', userId)
+            .maybeSingle()
+          if (cur) {
+            const res2 = await client.rpc('work_update_directory_member', {
+              target_user: userId,
+              new_name: cur.display_name,
+              new_email: cur.email,
+              new_dept: cleanDept,
+              new_password: '',
+            })
+            if (!res2.error) updated = true
+          }
+        } catch (e) {
+          console.warn('RPC work_update_directory_member fallback error:', e)
+        }
+      }
+
+      // 3. Dự phòng trực tiếp: Cập nhật trực tiếp các bảng
       try {
-        await client
+        const p1 = client
           .from('work_directory_members')
           .update({ department: cleanDept })
           .eq('user_id', userId)
-        await client
+        const p2 = client
           .from('work_members')
           .update({ department: cleanDept })
           .eq('user_id', userId)
-      } catch {}
+        await Promise.allSettled([p1, p2])
+      } catch (e) {
+        console.warn('Direct update department error:', e)
+      }
+
+      // 4. Nếu có phòng ban mới, đảm bảo tồn tại trong bảng work_departments
+      if (cleanDept) {
+        try {
+          await client
+            .from('work_departments')
+            .upsert({ name: cleanDept }, { onConflict: 'name' })
+        } catch {}
+      }
     },
     async signOut() {
       result(await client.auth.signOut())
