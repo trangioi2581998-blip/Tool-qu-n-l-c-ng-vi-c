@@ -137,15 +137,6 @@ export function AddTeamMemberDialog({
     }
   }
 
-  const handleGoToDepartments = () => {
-    onClose()
-    if (onNavigateToDepartments) {
-      onNavigateToDepartments()
-    } else if (onOpenCreateDirectoryMember) {
-      onOpenCreateDirectoryMember()
-    }
-  }
-
   return (
     <Dialog
       title={`Thêm thành viên vào dự án "${team?.name || ''}"`}
@@ -215,18 +206,7 @@ export function AddTeamMemberDialog({
           ) : filteredMembers.length === 0 ? (
             <div className="existing-member-empty">
               {availableMembers.length === 0 ? (
-                <>
-                  <p>Tất cả nhân sự trong các phòng ban đã có mặt trong dự án này.</p>
-                  {(onNavigateToDepartments || onOpenCreateDirectoryMember) && (
-                    <button
-                      type="button"
-                      className="button secondary sm"
-                      onClick={handleGoToDepartments}
-                    >
-                      <UserPlus size={14} /> Thêm nhân sự ở Quản lý phòng ban
-                    </button>
-                  )}
-                </>
+                <p>Tất cả nhân sự trong các phòng ban đã có mặt trong dự án này.</p>
               ) : (
                 <p>Không tìm thấy nhân sự phù hợp với từ khóa "{search}".</p>
               )}
@@ -261,19 +241,6 @@ export function AddTeamMemberDialog({
             })
           )}
         </div>
-
-        {(onNavigateToDepartments || onOpenCreateDirectoryMember) && (
-          <div className="existing-member-footer-hint">
-            <span>Chưa có nhân sự trong danh sách? </span>
-            <button
-              type="button"
-              className="text-link"
-              onClick={handleGoToDepartments}
-            >
-              + Thêm nhân sự ở Quản lý phòng ban
-            </button>
-          </div>
-        )}
 
         <ErrorText message={error} />
 
