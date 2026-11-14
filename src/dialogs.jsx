@@ -1710,6 +1710,7 @@ export function TeamDialog({ team, onClose, onSave }) {
   return (
     <Dialog
       title={isEditing ? 'Sửa tên nhóm' : 'Tạo nhóm'}
+      fullMobile
       onClose={() => {
         if (!busy) onClose()
       }}
@@ -1764,6 +1765,7 @@ export function DeleteTeamDialog({ team, onClose, onConfirm }) {
   return (
     <Dialog
       title="Xác nhận xóa nhóm"
+      compact
       onClose={() => {
         if (!busy) onClose()
       }}
@@ -1833,6 +1835,7 @@ export function TransferOwnerDialog({ team, member, onClose, onConfirm }) {
   return (
     <Dialog
       title="Chuyển quyền Trưởng nhóm"
+      compact
       onClose={() => {
         if (!busy) onClose()
       }}
@@ -1914,6 +1917,7 @@ export function InviteDialog({ repo, team, onClose }) {
   return (
     <Dialog
       title="Mời thành viên"
+      fullMobile
       description={
         isDemo
           ? 'Kết nối Supabase để tạo liên kết mời thật.'

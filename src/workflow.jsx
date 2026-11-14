@@ -367,6 +367,7 @@ export function AccountDialog({
           ? 'Cập nhật thông tin họ tên, email, phòng ban và mật khẩu của thành viên.'
           : 'Nhập thông tin và thiết lập mật khẩu đăng nhập cho thành viên mới.'
       }
+      fullMobile
       onClose={() => {
         if (!busy) onClose()
       }}

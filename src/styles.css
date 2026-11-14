@@ -2580,7 +2580,18 @@ h3 {
   height: calc(100dvh - 96px);
   max-height: calc(100dvh - 96px);
 }
-.dialog.dialog-wide[open] {
+.dialog.dialog-full-mobile {
+  width: min(480px, calc(100vw - 24px));
+  max-height: calc(100dvh - 48px);
+}
+.dialog.dialog-compact {
+  width: min(440px, calc(100vw - 24px));
+  height: auto;
+  min-height: 0;
+  max-height: max-content;
+}
+.dialog.dialog-wide[open],
+.dialog.dialog-full-mobile[open] {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -4672,40 +4683,114 @@ h3 {
   background: var(--purple-dark);
 }
 @media (max-width: 640px) {
-  .dialog.dialog-wide {
-    inset: 0;
-    margin: 0;
-    width: 100%;
-    max-width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
-    border: 0;
-    border-radius: 0;
-    box-sizing: border-box;
+  /* 1. Fullscreen dialogs on Mobile: TaskDialog, AccountDialog, TeamDialog, InviteDialog */
+  .dialog.dialog-wide,
+  .dialog.dialog-full-mobile {
+    inset: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
   }
-  .dialog.dialog-wide[open] {
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
+  .dialog.dialog-wide[open],
+  .dialog.dialog-full-mobile[open] {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
   }
-  .dialog:not(.dialog-wide) {
-    width: min(420px, calc(100vw - 32px)) !important;
-    max-height: calc(100dvh - 40px) !important;
+  .dialog.dialog-full-mobile .dialog-form {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 16px 18px 24px !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: none !important;
+  }
+  .dialog.dialog-full-mobile .form-actions {
+    margin-top: auto !important;
+    padding-top: 24px !important;
+    display: flex !important;
+    gap: 10px !important;
+  }
+  .dialog.dialog-full-mobile .form-actions button {
+    flex: 1 !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    justify-content: center !important;
+  }
+
+  /* 2. Compact / Hug-content dialogs on Mobile: Delete confirmation, transfer owner */
+  .dialog.dialog-compact {
+    width: min(390px, calc(100vw - 32px)) !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 48px) !important;
     margin: auto !important;
     border: 1px solid #e0d8ef !important;
     border-radius: 16px !important;
     box-shadow: 0 16px 50px rgba(33, 18, 70, 0.28) !important;
     overflow: hidden !important;
   }
-  .dialog:not(.dialog-wide)[open] {
+  .dialog.dialog-compact[open] {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .dialog.dialog-compact .dialog-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 13px !important;
+    padding: 16px 18px 18px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+  .dialog.dialog-compact .form-actions {
+    margin-top: 8px !important;
+    display: flex !important;
+    gap: 10px !important;
+  }
+  .dialog.dialog-compact .form-actions button {
+    flex: 1 !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    justify-content: center !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+  }
+
+  /* 3. General non-fullscreen dialogs */
+  .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact) {
+    width: min(420px, calc(100vw - 32px)) !important;
+    max-height: calc(100dvh - 40px) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: auto !important;
+    border: 1px solid #e0d8ef !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 50px rgba(33, 18, 70, 0.28) !important;
+    overflow: hidden !important;
+  }
+  .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact)[open] {
     display: flex;
     flex-direction: column;
+    height: auto !important;
+    min-height: 0 !important;
   }
-  .dialog:not(.dialog-wide) .dialog-form {
+  .dialog:not(.dialog-wide):not(.dialog-full-mobile):not(.dialog-compact) .dialog-form {
     flex: 0 1 auto !important;
     max-height: calc(100dvh - 120px);
     overflow-y: auto;
+    height: auto !important;
+    min-height: 0 !important;
   }
   .dialog-header {
     padding: 14px 16px 12px;

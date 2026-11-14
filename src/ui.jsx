@@ -144,6 +144,9 @@ export function Dialog({
   onClose,
   children,
   wide = false,
+  fullMobile = false,
+  compact = false,
+  className = '',
   autoFocus = true,
 }) {
   const ref = useRef(null)
@@ -159,11 +162,22 @@ export function Dialog({
       if (dialog.open) dialog.close()
     }
   }, [autoFocus])
+
+  const dialogClasses = [
+    'dialog',
+    wide && 'dialog-wide',
+    fullMobile && 'dialog-full-mobile',
+    compact && 'dialog-compact',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <dialog
       ref={ref}
       tabIndex={-1}
-      className={'dialog' + (wide ? ' dialog-wide' : '')}
+      className={dialogClasses}
       aria-labelledby="dialog-title"
       onCancel={(event) => {
         event.preventDefault()
