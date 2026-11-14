@@ -2756,7 +2756,7 @@ h3 {
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  gap: 12px 14px;
 }
 .form-trio {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3785,9 +3785,9 @@ h3 {
   gap: 6px;
 }
 .task-node-header {
-  margin: -8px -9px 2px;
-  padding: 10px 11px;
-  border-radius: 7px 7px 0 0;
+  margin: -14px -16px 4px;
+  padding: 12px 16px;
+  border-radius: 9px 9px 0 0;
   color: #fff;
 }
 .tree-main-card > .task-node-header {
@@ -3862,11 +3862,11 @@ h3 {
 .task-attachments {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
+  gap: 10px;
   min-width: 0;
-  padding: 8px;
+  padding: 12px 14px;
   border: 1px solid #e9e3f3;
-  border-radius: 7px;
+  border-radius: 8px;
 }
 .attachment-heading,
 .task-attachments summary,
@@ -3965,26 +3965,29 @@ h3 {
   }
   .tree-main-card,
   .tree-child-card {
-    gap: 5px;
-    padding-inline: 5px;
+    gap: 12px;
+    padding: 12px;
+  }
+  .task-node-header {
+    margin: -12px -12px 4px;
+    padding: 10px 12px;
+  }
+  .task-attributes {
+    gap: 12px;
   }
 }
 
-.task-attributes,
 .tree-main-card,
 .tree-child-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: 16px;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-}
-.tree-main-card,
-.tree-child-card {
   border: 1px solid #e8e1f4;
-  border-radius: 8px;
-  padding: 8px 9px;
+  border-radius: 10px;
+  padding: 14px 16px;
 }
 .tree-main-card {
   background: #fff;
@@ -3992,6 +3995,14 @@ h3 {
 }
 .tree-child-card {
   background: #fff;
+}
+.task-attributes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .tree-node-active {
   border-color: #c9b4f2;
@@ -4915,6 +4926,9 @@ h3 {
 /* Recurring Schedule Section */
 .recurring-section {
   background: #fcfaff;
+  padding: 12px 14px;
+  border: 1px solid #ece6f7;
+  border-radius: 8px;
 }
 .recurring-section h3 {
   display: flex;
