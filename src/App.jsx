@@ -140,7 +140,7 @@ const projectPages = {
 
 const commonPages = {
   allMembers: {
-    title: 'Thành viên chung',
+    title: 'Quản lý all dự án',
     Icon: Users,
     description: 'Quản lý toàn bộ danh sách thành viên và nhân sự trong tổ chức.',
   },
@@ -1949,7 +1949,7 @@ export default function App({
               >
                 <h3>Giới hạn quyền truy cập</h3>
                 <p className="muted" style={{ margin: '10px 0 20px' }}>
-                  Chỉ có tài khoản trưởng nhóm mới xem được menu Thành viên chung này.
+                  Chỉ có tài khoản trưởng nhóm mới xem được menu Quản lý all dự án này.
                 </p>
                 <button
                   type="button"
