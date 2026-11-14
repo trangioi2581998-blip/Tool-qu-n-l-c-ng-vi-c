@@ -5658,3 +5658,203 @@ h3 {
   color: #dc2626;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   Existing Members Tab in AccountDialog
+   ========================================================================== */
+.existing-member-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.existing-member-search {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.existing-member-search .search-icon {
+  position: absolute;
+  left: 12px;
+  color: #8b8599;
+  pointer-events: none;
+}
+.existing-member-search input {
+  width: 100%;
+  padding-left: 36px !important;
+  padding-right: 32px !important;
+  height: 38px !important;
+  font-size: 13.5px !important;
+  border-radius: 8px !important;
+}
+.existing-member-search .clear-search {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #8b8599;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+.existing-member-search .clear-search:hover {
+  color: #333;
+  background: #ede9f6;
+}
+.existing-member-role-select {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.existing-member-role-select label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  margin: 0;
+}
+.existing-member-role-select select {
+  height: 38px !important;
+  padding: 0 10px !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+  min-width: 110px;
+}
+.existing-member-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #faf8fd;
+  border: 1px solid #ede7f6;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.existing-member-toolbar .select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #3b3749;
+  cursor: pointer;
+  margin: 0;
+}
+.existing-member-toolbar .select-all-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--purple, #6366f1);
+}
+.existing-member-toolbar .selected-count {
+  font-size: 12.5px;
+  color: #6c637a;
+}
+.existing-member-toolbar .selected-count strong {
+  color: var(--purple-dark, #4f46e5);
+  font-weight: 700;
+}
+.existing-member-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #ede7f6;
+  border-radius: 10px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+.existing-member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3eff9;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+.existing-member-row:last-child {
+  border-bottom: none;
+}
+.existing-member-row:hover {
+  background-color: #faf7fd;
+}
+.existing-member-row.selected {
+  background-color: #f3edfc;
+}
+.existing-member-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--purple, #6366f1);
+  flex-shrink: 0;
+}
+.existing-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.existing-member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.existing-member-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e1b26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.existing-member-dept {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  background: #ede9f6;
+  color: #5c4f82;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.existing-member-email {
+  font-size: 12px;
+  color: #797188;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.existing-member-loading,
+.existing-member-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: #797188;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.existing-member-loading .spin {
+  animation: spin 1s linear infinite;
+  color: var(--purple, #6366f1);
+}
+@media (max-width: 640px) {
+  .existing-member-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .existing-member-role-select {
+    justify-content: flex-end;
+  }
+  .existing-member-role-select select {
+    flex: 1;
+  }
+}

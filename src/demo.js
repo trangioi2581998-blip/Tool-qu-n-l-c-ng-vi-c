@@ -1172,6 +1172,57 @@ export function createDemo(userId, onAccounts) {
       onAccounts(demoAccounts())
       return { member, accountCreated }
     },
+    async listAvailableMembers(currentTeamId) {
+      const currentTeamMemberIds = new Set(
+        (state.members[currentTeamId] || []).map((m) => m.user_id),
+      )
+      const all = []
+      for (const acc of demoAccounts()) {
+        all.push({
+          user_id: acc.id,
+          display_name: acc.name,
+          email: acc.email,
+          department: acc.department || '',
+        })
+      }
+      for (const teamMembers of Object.values(state.members || {})) {
+        for (const m of teamMembers) {
+          all.push({
+            user_id: m.user_id,
+            display_name: m.display_name,
+            email: m.email,
+            department: m.department || '',
+          })
+        }
+      }
+      const map = new Map()
+      for (const m of all) {
+        if (m.user_id && !currentTeamMemberIds.has(m.user_id) && !map.has(m.user_id)) {
+          map.set(m.user_id, m)
+        }
+      }
+      return Array.from(map.values())
+    },
+    async addExistingMember(team, member, role = 'member') {
+      const list = state.members[team.id] ?? []
+      const current = list.find((m) => m.user_id === member.user_id)
+      if (current) {
+        current.role = role
+        save()
+        return current
+      }
+      const newMember = {
+        user_id: member.user_id,
+        display_name: member.display_name || member.name,
+        email: member.email,
+        department: member.department || '',
+        role: role || 'member',
+      }
+      list.push(newMember)
+      state.members[team.id] = list
+      save()
+      return newMember
+    },
     async updateMember(
       team,
       userId,

@@ -85,3 +85,4 @@ begin
     alter publication supabase_realtime add table public.work_team_messages;
   end if;
 end $$;
+

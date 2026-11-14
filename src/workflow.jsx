@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bell,
   CalendarClock,
@@ -6,11 +6,16 @@ import {
   Copy,
   Mail,
   RefreshCw,
+  Search,
   Send,
   Settings,
+  UserCheck,
+  UserPlus,
   UserRoundPlus,
+  Users,
 } from 'lucide-react'
 import {
+  Avatar,
   DatePicker,
   Dialog,
   ErrorText,
@@ -289,6 +294,16 @@ export function AccountDialog({
 }) {
   const editing = Boolean(member)
   const isDemo = repo.mode === 'demo'
+  const [tab, setTab] = useState('existing') // 'existing' | 'new'
+
+  // State cho "Thành viên có sẵn"
+  const [availableMembers, setAvailableMembers] = useState([])
+  const [loadingAvailable, setLoadingAvailable] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [existingRole, setExistingRole] = useState('member')
+
+  // State cho "Tạo tài khoản mới" / "Chỉnh sửa"
   const [name, setName] = useState(member?.display_name || '')
   const [email, setEmail] = useState(member?.email || '')
   const [department, setDepartment] = useState(member?.department || '')
@@ -299,7 +314,93 @@ export function AccountDialog({
   const [error, setError] = useState('')
   const requirePassword = !editing
   const minPassLen = 6
-  async function submit(event) {
+
+  // Tải danh sách thành viên có sẵn trong hệ thống (ngoài nhóm hiện tại)
+  useEffect(() => {
+    if (editing) return
+    let active = true
+    setLoadingAvailable(true)
+    if (typeof repo.listAvailableMembers === 'function') {
+      repo
+        .listAvailableMembers(team?.id)
+        .then((list) => {
+          if (!active) return
+          const safeList = Array.isArray(list) ? list : []
+          setAvailableMembers(safeList)
+          if (safeList.length === 0) {
+            setTab('new')
+          }
+        })
+        .catch((err) => {
+          console.warn('Lỗi tải danh sách thành viên có sẵn:', err)
+        })
+        .finally(() => {
+          if (active) setLoadingAvailable(false)
+        })
+    } else {
+      setLoadingAvailable(false)
+    }
+    return () => {
+      active = false
+    }
+  }, [editing, repo, team?.id])
+
+  const filteredAvailable = useMemo(() => {
+    if (!search.trim()) return availableMembers
+    const q = search.trim().toLowerCase()
+    return availableMembers.filter(
+      (m) =>
+        (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+        (m.email && m.email.toLowerCase().includes(q)) ||
+        (m.department && m.department.toLowerCase().includes(q)),
+    )
+  }, [availableMembers, search])
+
+  const allFilteredSelected =
+    filteredAvailable.length > 0 &&
+    filteredAvailable.every((m) => selectedIds.has(m.user_id))
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allFilteredSelected) {
+        filteredAvailable.forEach((m) => next.delete(m.user_id))
+      } else {
+        filteredAvailable.forEach((m) => next.add(m.user_id))
+      }
+      return next
+    })
+  }
+
+  const toggleSelectMember = (userId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }
+
+  async function submitExisting(e) {
+    e.preventDefault()
+    if (selectedIds.size === 0 || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const toAdd = availableMembers.filter((m) => selectedIds.has(m.user_id))
+      const addedList = []
+      for (const m of toAdd) {
+        const added = await repo.addExistingMember(team, m, existingRole)
+        if (added) addedList.push(added)
+      }
+      onCreated({ members: addedList, accountCreated: false })
+    } catch (err) {
+      setError(readableError(err))
+      setBusy(false)
+    }
+  }
+
+  async function submitNewOrEdit(event) {
     event.preventDefault()
     if (busy || !name.trim() || !email.trim()) return
     if (requirePassword || password.trim()) {
@@ -359,129 +460,296 @@ export function AccountDialog({
       setBusy(false)
     }
   }
+
+  const dialogTabs = !editing ? (
+    <div className="dialog-tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'existing'}
+        className={tab === 'existing' ? 'active' : ''}
+        onClick={() => {
+          setError('')
+          setTab('existing')
+        }}
+      >
+        <Users size={16} /> Thành viên có sẵn ({availableMembers.length})
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'new'}
+        className={tab === 'new' ? 'active' : ''}
+        onClick={() => {
+          setError('')
+          setTab('new')
+        }}
+      >
+        <UserPlus size={16} /> Tạo tài khoản mới
+      </button>
+    </div>
+  ) : null
+
   return (
     <Dialog
-      title={editing ? 'Chỉnh sửa thành viên' : 'Thêm thành viên'}
+      title={editing ? 'Chỉnh sửa thành viên' : 'Thêm thành viên vào nhóm'}
       description={
         editing
           ? 'Cập nhật thông tin họ tên, email, phòng ban và mật khẩu của thành viên.'
-          : 'Nhập thông tin và thiết lập mật khẩu đăng nhập cho thành viên mới.'
+          : tab === 'existing'
+            ? `Chọn thành viên có sẵn trong hệ thống để thêm vào nhóm "${team?.name || ''}".`
+            : 'Nhập thông tin và thiết lập mật khẩu đăng nhập cho thành viên mới.'
       }
+      tabs={dialogTabs}
+      wide={!editing}
       fullMobile
       onClose={() => {
         if (!busy) onClose()
       }}
     >
-      <form className="dialog-form" onSubmit={submit}>
-        <label>
-          Họ và tên
-          <input
-            required
-            autoFocus
-            maxLength={80}
-            placeholder="Nhập họ và tên…"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-        <label>
-          Email
-          <input
-            required
-            type="email"
-            maxLength={254}
-            placeholder="ten@congty.vn"
-            value={email}
-            autoComplete="off"
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </label>
-        <label>
-          Phòng ban
-          <input
-            maxLength={120}
-            placeholder="VD: Product & CX, Kỹ thuật, Thiết kế…"
-            value={department}
-            onChange={(event) => setDepartment(event.target.value)}
-          />
-        </label>
-        {(!editing || member.role !== 'owner') && (
-          <label>
-            Vai trò trong nhóm
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value)}
+      {!editing && tab === 'existing' ? (
+        <form className="dialog-form" onSubmit={submitExisting}>
+          <div className="existing-member-header">
+            <div className="existing-member-search">
+              <Search size={16} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Tìm theo tên, email, phòng ban..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoFocus
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="clear-search"
+                  onClick={() => setSearch('')}
+                  title="Xóa tìm kiếm"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <div className="existing-member-role-select">
+              <label>
+                <span>Vai trò:</span>
+                <select
+                  value={existingRole}
+                  onChange={(e) => setExistingRole(e.target.value)}
+                >
+                  <option value="member">Nhân viên</option>
+                  <option value="deputy">Phó nhóm</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="existing-member-toolbar">
+            <label className="select-all-label">
+              <input
+                type="checkbox"
+                checked={allFilteredSelected}
+                onChange={toggleSelectAll}
+                disabled={filteredAvailable.length === 0}
+              />
+              <span>
+                {allFilteredSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'} (
+                {filteredAvailable.length})
+              </span>
+            </label>
+            <span className="selected-count">
+              Đã chọn: <strong>{selectedIds.size}</strong>
+            </span>
+          </div>
+
+          <div className="existing-member-list">
+            {loadingAvailable ? (
+              <div className="existing-member-loading">
+                <RefreshCw size={18} className="spin" /> Đang tải danh sách thành viên...
+              </div>
+            ) : filteredAvailable.length === 0 ? (
+              <div className="existing-member-empty">
+                {availableMembers.length === 0 ? (
+                  <>
+                    <p>Chưa có thành viên nào khác trong hệ thống.</p>
+                    <button
+                      type="button"
+                      className="button secondary sm"
+                      onClick={() => setTab('new')}
+                    >
+                      <UserPlus size={14} /> Chuyển sang Tạo tài khoản mới
+                    </button>
+                  </>
+                ) : (
+                  <p>Không tìm thấy thành viên phù hợp với từ khóa "{search}".</p>
+                )}
+              </div>
+            ) : (
+              filteredAvailable.map((m) => {
+                const isSelected = selectedIds.has(m.user_id)
+                return (
+                  <div
+                    key={m.user_id}
+                    className={'existing-member-row' + (isSelected ? ' selected' : '')}
+                    onClick={() => toggleSelectMember(m.user_id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelectMember(m.user_id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Avatar name={m.display_name} id={m.user_id} />
+                    <div className="existing-member-info">
+                      <div className="existing-member-name-row">
+                        <span className="existing-member-name">{m.display_name}</span>
+                        {m.department && (
+                          <span className="existing-member-dept">{m.department}</span>
+                        )}
+                      </div>
+                      <span className="existing-member-email">{m.email}</span>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          <ErrorText message={error} />
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={onClose}
+              disabled={busy}
             >
-              <option value="member">Nhân viên</option>
-              <option value="deputy">Phó nhóm</option>
-            </select>
-          </label>
-        )}
-        <label>
-          <span id="member-password-label">
-            {editing ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu'}
-          </span>
-          <PasswordInput
-            required={requirePassword}
-            minLength={minPassLen}
-            maxLength={72}
-            placeholder={
-              editing
-                ? 'Nhập mật khẩu mới nếu muốn đổi…'
-                : 'Nhập mật khẩu đăng nhập…'
-            }
-            autoComplete="new-password"
-            aria-labelledby="member-password-label"
-            aria-describedby="member-password-hint"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <small id="member-password-hint" className="muted field-hint">
-            Dùng ít nhất {minPassLen} ký tự.
-          </small>
-        </label>
-        {(requirePassword || password.length > 0) && (
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="button primary"
+              disabled={busy || selectedIds.size === 0}
+            >
+              <UserCheck size={16} />
+              {busy
+                ? 'Đang thêm…'
+                : `Thêm vào nhóm (${selectedIds.size})`}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form className="dialog-form" onSubmit={submitNewOrEdit}>
           <label>
-            Xác nhận mật khẩu
-            <PasswordInput
-              required={requirePassword || password.length > 0}
-              maxLength={72}
-              placeholder="Nhập lại mật khẩu…"
-              autoComplete="new-password"
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
+            Họ và tên
+            <input
+              required
+              autoFocus
+              maxLength={80}
+              placeholder="Nhập họ và tên…"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
             />
           </label>
-        )}
-        <ErrorText message={error} />
-        <div className="form-actions">
-          <button
-            type="button"
-            className="button secondary"
-            onClick={onClose}
-            disabled={busy}
-          >
-            Hủy
-          </button>
-          <button
-            className="button primary"
-            disabled={
-              busy ||
-              !name.trim() ||
-              !email.trim() ||
-              (requirePassword && (!password || !confirmation)) ||
-              (password.length > 0 && !confirmation)
-            }
-          >
-            {!editing && <UserRoundPlus size={16} />}
-            {busy
-              ? 'Đang lưu…'
-              : editing
-                ? 'Lưu thay đổi'
-                : 'Thêm thành viên'}
-          </button>
-        </div>
-      </form>
+          <label>
+            Email
+            <input
+              required
+              type="email"
+              maxLength={254}
+              placeholder="ten@congty.vn"
+              value={email}
+              autoComplete="off"
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <label>
+            Phòng ban
+            <input
+              maxLength={120}
+              placeholder="VD: Product & CX, Kỹ thuật, Thiết kế…"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+            />
+          </label>
+          {(!editing || member.role !== 'owner') && (
+            <label>
+              Vai trò trong nhóm
+              <select
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+              >
+                <option value="member">Nhân viên</option>
+                <option value="deputy">Phó nhóm</option>
+              </select>
+            </label>
+          )}
+          <label>
+            <span id="member-password-label">
+              {editing ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu'}
+            </span>
+            <PasswordInput
+              required={requirePassword}
+              minLength={minPassLen}
+              maxLength={72}
+              placeholder={
+                editing
+                  ? 'Nhập mật khẩu mới nếu muốn đổi…'
+                  : 'Nhập mật khẩu đăng nhập…'
+              }
+              autoComplete="new-password"
+              aria-labelledby="member-password-label"
+              aria-describedby="member-password-hint"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <small id="member-password-hint" className="muted field-hint">
+              Dùng ít nhất {minPassLen} ký tự.
+            </small>
+          </label>
+          {(requirePassword || password.length > 0) && (
+            <label>
+              Xác nhận mật khẩu
+              <PasswordInput
+                required={requirePassword || password.length > 0}
+                maxLength={72}
+                placeholder="Nhập lại mật khẩu…"
+                autoComplete="new-password"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+              />
+            </label>
+          )}
+          <ErrorText message={error} />
+          <div className="form-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={onClose}
+              disabled={busy}
+            >
+              Hủy
+            </button>
+            <button
+              className="button primary"
+              disabled={
+                busy ||
+                !name.trim() ||
+                !email.trim() ||
+                (requirePassword && (!password || !confirmation)) ||
+                (password.length > 0 && !confirmation)
+              }
+            >
+              {!editing && <UserRoundPlus size={16} />}
+              {busy
+                ? 'Đang lưu…'
+                : editing
+                  ? 'Lưu thay đổi'
+                  : 'Tạo & Thêm vào nhóm'}
+            </button>
+          </div>
+        </form>
+      )}
     </Dialog>
   )
 }

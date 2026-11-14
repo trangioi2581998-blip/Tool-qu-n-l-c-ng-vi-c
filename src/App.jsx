@@ -923,30 +923,38 @@ export default function App({
   const onInvite = () => onCreate('invite')
   const onCreateAccount = () => onCreate('account')
   const onEditMember = (member) => setModal({ type: 'account', member })
-  function memberCreated({ member, accountCreated, confirmation }) {
-    patchSnapshot((current) =>
-      current.members.some((item) => item.user_id === member.user_id)
-        ? {
-            ...current,
-            members: current.members.map((item) =>
-              item.user_id === member.user_id ? member : item,
-            ),
+  function memberCreated(res) {
+    if (!res) return
+    const newMembers = res.members || (res.member ? [res.member] : [])
+    if (newMembers.length > 0) {
+      patchSnapshot((current) => {
+        let updatedList = [...current.members]
+        for (const m of newMembers) {
+          const idx = updatedList.findIndex((item) => item.user_id === m.user_id)
+          if (idx >= 0) {
+            updatedList[idx] = m
+          } else {
+            updatedList.push(m)
           }
-        : { ...current, members: [...current.members, member] },
-    )
+        }
+        return { ...current, members: updatedList }
+      })
+    }
     setModal(null)
-    if (confirmation === 'failed') {
+    if (res.confirmation === 'failed') {
       notify(
         'Tài khoản đã có trong nhóm. Chưa gửi được email xác nhận. Hãy thử lại với cùng email.',
         true,
       )
-    } else if (confirmation === 'sent') {
+    } else if (res.confirmation === 'sent') {
       notify('Đã gửi email xác nhận tài khoản cho thành viên.')
+    } else if (res.members && res.members.length > 1) {
+      notify(`Đã thêm ${res.members.length} thành viên vào nhóm.`)
     } else {
       notify(
-        accountCreated
+        res.accountCreated
           ? 'Đã thêm thành viên mới.'
-          : 'Đã cập nhật thông tin thành viên.',
+          : 'Đã thêm thành viên vào nhóm.',
       )
     }
   }
@@ -1608,7 +1616,7 @@ export default function App({
                         className="button hero-primary"
                         onClick={onCreateAccount}
                       >
-                        <UserRoundPlus size={18} /> Tạo tài khoản
+                        <UserRoundPlus size={18} /> Thêm thành viên
                       </button>
                     )
                   ) : view.kind === 'reports' ? (

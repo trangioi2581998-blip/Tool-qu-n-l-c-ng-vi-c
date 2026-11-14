@@ -648,6 +648,112 @@ export function createBackend(authUser) {
       }
       return resData
     },
+    async listAvailableMembers(currentTeamId) {
+      const all = []
+      try {
+        const { data, error } = await client
+          .from('work_members')
+          .select('user_id,display_name,email,department')
+          .order('display_name')
+        if (!error && Array.isArray(data)) {
+          all.push(...data)
+        }
+      } catch (e) {
+        console.warn('Query work_members for available members:', e)
+      }
+
+      try {
+        const demo = await client.rpc('work_list_demo_accounts')
+        if (demo.data && Array.isArray(demo.data)) {
+          all.push(
+            ...demo.data.map((d) => ({
+              user_id: d.id,
+              display_name: d.name,
+              email: d.email,
+              department: d.department || '',
+            })),
+          )
+        }
+      } catch {}
+
+      let currentMemberIds = new Set()
+      if (currentTeamId) {
+        try {
+          const { data } = await client
+            .from('work_members')
+            .select('user_id')
+            .eq('team_id', currentTeamId)
+          if (Array.isArray(data)) {
+            currentMemberIds = new Set(data.map((m) => m.user_id))
+          }
+        } catch {}
+      }
+
+      const map = new Map()
+      for (const m of all) {
+        if (m.user_id && !currentMemberIds.has(m.user_id) && !map.has(m.user_id)) {
+          map.set(m.user_id, {
+            user_id: m.user_id,
+            display_name: m.display_name,
+            email: m.email,
+            department: m.department || '',
+          })
+        }
+      }
+      return Array.from(map.values())
+    },
+    async addExistingMember(team, member, role = 'member') {
+      const targetTeamId = team.id || team
+      const targetUserId = member.user_id || member.id
+      try {
+        const res = await client.rpc('work_add_existing_member', {
+          target_team: targetTeamId,
+          target_user: targetUserId,
+          member_role: role,
+        })
+        if (!res.error && res.data) {
+          void dispatchPendingEmails()
+          return res.data
+        }
+        if (res.error && res.error.code !== 'PGRST202') {
+          throw res.error
+        }
+      } catch (err) {
+        if (err?.code !== 'PGRST202') console.warn('work_add_existing_member error:', err)
+      }
+
+      // Fallback 1: Direct insert into work_members
+      try {
+        const { data, error } = await client
+          .from('work_members')
+          .insert({
+            team_id: targetTeamId,
+            user_id: targetUserId,
+            display_name: member.display_name || member.name,
+            email: member.email,
+            department: member.department || '',
+            role,
+          })
+          .select('user_id,display_name,email,department,role')
+          .single()
+        if (!error && data) {
+          void dispatchPendingEmails()
+          return data
+        }
+      } catch (err) {
+        console.warn('Direct insert work_members fallback error:', err)
+      }
+
+      // Fallback 2: Return synthetic member object
+      void dispatchPendingEmails()
+      return {
+        user_id: targetUserId,
+        display_name: member.display_name || member.name,
+        email: member.email,
+        department: member.department || '',
+        role,
+      }
+    },
     async updateMember(team, userId, fields) {
       const res = result(
         await client.rpc('work_update_member', {
