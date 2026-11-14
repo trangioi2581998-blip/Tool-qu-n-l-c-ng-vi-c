@@ -3,18 +3,21 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "build:demo": "vite build --mode demo && node scripts/standalone.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.89.0",
     "@fontsource/be-vietnam-pro": "^5.2.0",
+    "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.544.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.0",

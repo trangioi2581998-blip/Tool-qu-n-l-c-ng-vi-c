@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlarmClock,
   ArrowRight,
@@ -11,13 +11,16 @@ import {
   Clock3,
   CornerDownRight,
   Ellipsis,
+  FileSpreadsheet,
   Layers3,
   ListTodo,
   LockKeyhole,
   Plus,
+  Send,
   UsersRound,
   Workflow,
 } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import {
   byDeadline,
   dateKey,
@@ -31,8 +34,10 @@ import {
 } from './model.js'
 import {
   Avatar,
+  Dialog,
   Dropdown,
   Empty,
+  ErrorText,
   IconButton,
   Priority,
   StatusBadge,
@@ -1293,6 +1298,284 @@ const compareOptions = [
   { offset: -3, label: '3 tuần trước' },
 ]
 
+export function SendReportDialog({
+  team,
+  members = [],
+  memberMap = {},
+  reportData,
+  onClose,
+  repo,
+  notify,
+}) {
+  const [selectedMemberIds, setSelectedMemberIds] = useState(() =>
+    members.map((m) => m.user_id),
+  )
+  const [note, setNote] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+
+  const allSelected =
+    members.length > 0 && selectedMemberIds.length === members.length
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedMemberIds([])
+    } else {
+      setSelectedMemberIds(members.map((m) => m.user_id))
+    }
+  }
+
+  function toggleMember(userId) {
+    setSelectedMemberIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    )
+  }
+
+  const {
+    targetLabel,
+    compareLabel,
+    targetBounds,
+    compareBounds,
+    cutoffDateLabel,
+    memberFilterLabel,
+    targetMatrix,
+    compareMatrix,
+    currentReport,
+    REPORT_SECTIONS,
+  } = reportData
+
+  const totalDiff = targetMatrix.totalActive - compareMatrix.totalActive
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!selectedMemberIds.length) {
+      setError('Vui lòng chọn ít nhất 1 thành viên nhận báo cáo.')
+      return
+    }
+    setSending(true)
+    setError('')
+
+    try {
+      const selectedNames = members
+        .filter((m) => selectedMemberIds.includes(m.user_id))
+        .map((m) => m.display_name)
+        .join(', ')
+
+      const summaryLines = []
+      for (const sec of REPORT_SECTIONS) {
+        if (sec.key === 'deleted') continue
+        const secCount = sec.levels.reduce(
+          (sum, lev) =>
+            sum + (targetMatrix.matrix[sec.key]?.[lev.key]?.length || 0),
+          0,
+        )
+        const prevCount = sec.levels.reduce(
+          (sum, lev) =>
+            sum + (compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0),
+          0,
+        )
+        const diff = secCount - prevCount
+        const diffStr =
+          diff > 0 ? `(+${diff})` : diff < 0 ? `(${diff})` : `(0)`
+        summaryLines.push(`• **${sec.label}**: ${secCount} việc ${diffStr}`)
+      }
+
+      const changedTaskTitles = currentReport.statusChanged
+        .slice(0, 10)
+        .map((t) => {
+          const from = statuses[t.fromStatus]?.label || t.fromStatus
+          const to = statuses[t.toStatus]?.label || t.toStatus
+          if (t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus) {
+            return `• "${t.title}" (${from} ➔ ${to})`
+          }
+          return `• "${t.title}"`
+        })
+
+      const bodyParts = [
+        `📊 **BÁO CÁO TRẠNG THÁI & TIẾN ĐỘ CÔNG VIỆC**`,
+        `🗓 **Kỳ báo cáo:** ${targetLabel} (${targetBounds.rangeLabel})`,
+        `🔄 **So sánh với:** ${compareLabel} (${compareBounds.rangeLabel})`,
+        `👤 **Nhân sự lọc:** ${memberFilterLabel}`,
+        `👥 **Người nhận (${selectedMemberIds.length}):** ${selectedNames}`,
+      ]
+
+      if (note.trim()) {
+        bodyParts.push(`\n💬 **Lời nhắn kèm theo:**\n${note.trim()}`)
+      }
+
+      bodyParts.push(
+        `\n📈 **TỔNG HỢP TIẾN ĐỘ LŨY KẾ:**\n` +
+          summaryLines.join('\n') +
+          `\n➡️ **Tổng số việc:** ${targetMatrix.totalActive} việc (${totalDiff >= 0 ? '+' : ''}${totalDiff} so với ${compareLabel})`,
+      )
+
+      if (changedTaskTitles.length > 0) {
+        bodyParts.push(
+          `\n📌 **CÁC ĐẦU MỤC CÔNG VIỆC THAY ĐỔI TRONG KỲ:**\n` +
+            changedTaskTitles.join('\n') +
+            (currentReport.statusChanged.length > 10
+              ? `\n• *(và ${currentReport.statusChanged.length - 10} công việc khác)*`
+              : ''),
+        )
+      }
+
+      const messageBody = bodyParts.join('\n')
+
+      if (team?.id && repo?.sendTeamMessage) {
+        await repo.sendTeamMessage(team.id, messageBody)
+      }
+
+      notify?.(
+        `Đã gửi báo cáo tiến độ tới ${selectedMemberIds.length} thành viên!`,
+      )
+      onClose()
+    } catch (err) {
+      console.error('Send report error:', err)
+      setError(err.message || 'Không thể gửi báo cáo. Vui lòng thử lại.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <Dialog
+      title="Gửi báo cáo công việc"
+      description={`Kỳ ${targetLabel} (${targetBounds.rangeLabel})`}
+      onClose={onClose}
+      autoFocus={false}
+    >
+      <form className="dialog-form send-report-form" onSubmit={handleSubmit}>
+        {error && <ErrorText message={error} />}
+
+        <div className="send-report-summary-box">
+          <div className="report-summary-row">
+            <span>Kỳ báo cáo:</span>
+            <strong>
+              {targetLabel} ({targetBounds.rangeLabel})
+            </strong>
+          </div>
+          <div className="report-summary-row">
+            <span>So sánh với:</span>
+            <strong>
+              {compareLabel} ({compareBounds.rangeLabel})
+            </strong>
+          </div>
+          <div className="report-summary-row">
+            <span>Nhân sự:</span>
+            <strong>{memberFilterLabel}</strong>
+          </div>
+          <div className="report-summary-row">
+            <span>Tổng số công việc:</span>
+            <strong>
+              {targetMatrix.totalActive} việc{' '}
+              <span
+                className={
+                  totalDiff > 0 ? 'up-text' : totalDiff < 0 ? 'down-text' : ''
+                }
+              >
+                ({totalDiff > 0 ? '+' + totalDiff : totalDiff})
+              </span>
+            </strong>
+          </div>
+        </div>
+
+        <div className="field-group">
+          <div className="send-report-member-header">
+            <span className="field-label-text">
+              Chọn người nhận ({selectedMemberIds.length}/{members.length})
+            </span>
+            <button
+              type="button"
+              className="text-link-button"
+              onClick={toggleAll}
+            >
+              {allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+            </button>
+          </div>
+
+          <div className="send-report-members-list">
+            {members.map((member) => {
+              const checked = selectedMemberIds.includes(member.user_id)
+              const roleLabel =
+                member.role === 'owner'
+                  ? 'Trưởng nhóm'
+                  : member.role === 'deputy'
+                    ? 'Phó nhóm'
+                    : 'Nhân viên'
+              const roleBadgeClass =
+                member.role === 'owner'
+                  ? 'purple'
+                  : member.role === 'deputy'
+                    ? 'blue'
+                    : 'gray'
+
+              return (
+                <label
+                  key={member.user_id}
+                  className={
+                    'send-report-member-item' +
+                    (checked ? ' is-selected' : '')
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleMember(member.user_id)}
+                  />
+                  <Avatar
+                    name={member.display_name}
+                    id={member.user_id}
+                    size="sm"
+                  />
+                  <div className="send-report-member-info">
+                    <span className="send-report-member-name">
+                      {member.display_name}
+                    </span>
+                    <span className="send-report-member-email">
+                      {member.email}
+                    </span>
+                  </div>
+                  <span className={'badge ' + roleBadgeClass}>{roleLabel}</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+
+        <label className="field-label">
+          <span>Ghi chú kèm theo (tùy chọn)</span>
+          <textarea
+            rows={2}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Nhập lời nhắn hoặc lưu ý gửi kèm bảng báo cáo..."
+          />
+        </label>
+
+        <div className="dialog-footer actions">
+          <button
+            type="button"
+            className="button"
+            onClick={onClose}
+            disabled={sending}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="button primary"
+            disabled={sending || selectedMemberIds.length === 0}
+          >
+            <Send size={16} /> {sending ? 'Đang gửi...' : 'Gửi báo cáo'}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  )
+}
+
 export function ReportPanel({
   tasks,
   deletedTasks = [],
@@ -1300,10 +1583,15 @@ export function ReportPanel({
   memberMap,
   today,
   onOpen,
+  team,
+  actionRef,
+  repo,
+  notify,
 }) {
   const [targetWeek, setTargetWeek] = useState(0)
   const [compareWeek, setCompareWeek] = useState(-1)
   const [memberFilter, setMemberFilter] = useState('all')
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   const effectiveCompare =
     compareWeek >= targetWeek ? targetWeek - 1 : compareWeek
@@ -1360,6 +1648,135 @@ export function ReportPanel({
     'Tuần trước'
 
   const cutoffDateLabel = fullDate(targetCutoff).slice(0, 5)
+
+  const memberFilterLabel =
+    memberFilter === 'all'
+      ? 'Tất cả thành viên'
+      : memberMap?.[memberFilter]?.display_name ||
+        members.find((m) => m.user_id === memberFilter)?.display_name ||
+        memberFilter
+
+  function handleExportExcel() {
+    try {
+      const rows = []
+
+      // Header information
+      rows.push(['BÁO CÁO TRẠNG THÁI & TIẾN ĐỘ CÔNG VIỆC'])
+      if (team?.name) {
+        rows.push(['Nhóm:', team.name])
+      }
+      rows.push(['Kỳ báo cáo:', `${targetLabel} (${targetBounds.rangeLabel})`])
+      rows.push([
+        'So sánh với:',
+        `${compareLabel} (${compareBounds.rangeLabel})`,
+      ])
+      rows.push(['Nhân sự:', memberFilterLabel])
+      rows.push([
+        'Thời điểm chốt số liệu:',
+        `Lũy kế đến ngày ${cutoffDateLabel}`,
+      ])
+      rows.push([]) // empty row
+
+      // Table Header
+      rows.push([
+        'Trạng thái công việc',
+        'Mức độ hoàn thành',
+        `Số lượng lũy kế đến ${cutoffDateLabel}`,
+        `So sánh với ${compareLabel}`,
+        'Chi tiết Đầu mục công việc thay đổi trạng thái',
+      ])
+
+      // Data rows
+      for (const sec of REPORT_SECTIONS) {
+        sec.levels.forEach((lev, levIdx) => {
+          const curTasks = targetMatrix.matrix[sec.key]?.[lev.key] || []
+          const curCount = curTasks.length
+          const prevCount =
+            compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0
+          const diff = curCount - prevCount
+
+          const changedInGroup = currentReport.statusChanged.filter((t) => {
+            if (t.isDeleted) return sec.key === 'deleted'
+            if (sec.key === 'deleted') return false
+            const statusKey = getTaskEffectiveStatusKey(t)
+            if (statusKey !== sec.key) return false
+            const pace = getTaskPace(t, targetCutoff)
+            return pace === lev.key
+          })
+
+          const itemsToShow =
+            changedInGroup.length > 0 ? changedInGroup : curTasks
+          const diffText = diff > 0 ? `+${diff}` : `${diff}`
+
+          const detailsText = itemsToShow
+            .map((t) => {
+              const fromLabel = statuses[t.fromStatus]?.label || t.fromStatus
+              const toLabel = statuses[t.toStatus]?.label || t.toStatus
+              if (t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus) {
+                return `• "${t.title}" ${fromLabel} => ${toLabel}`
+              }
+              const dueStr = t.due_date ? ` (${t.due_date})` : ''
+              return `• "${t.title}"${dueStr}`
+            })
+            .join('\r\n')
+
+          rows.push([
+            levIdx === 0 ? sec.label : '',
+            lev.label || '—',
+            curCount,
+            diffText,
+            detailsText,
+          ])
+        })
+      }
+
+      // Total row
+      const totalDiff = targetMatrix.totalActive - compareMatrix.totalActive
+      const totalDiffText = totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`
+      rows.push([
+        'Tổng công việc',
+        '',
+        targetMatrix.totalActive,
+        totalDiffText,
+        '',
+      ])
+
+      const ws = XLSX.utils.aoa_to_sheet(rows)
+      ws['!cols'] = [
+        { wch: 22 },
+        { wch: 20 },
+        { wch: 24 },
+        { wch: 24 },
+        { wch: 60 },
+      ]
+
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo tiến độ')
+
+      const cleanTeam = (team?.name || 'Nhom').replace(/[/\\?%*:|"<>]/g, '_')
+      const fileName = `Bao_cao_tien_do_${cleanTeam}_${targetBounds.start}_${targetBounds.end}.xlsx`
+      XLSX.writeFile(wb, fileName)
+      notify?.('Đã xuất báo cáo Excel thành công!')
+    } catch (err) {
+      console.error('Export Excel error:', err)
+      notify?.(
+        'Không thể xuất báo cáo: ' + (err.message || 'Lỗi không xác định'),
+        true,
+      )
+    }
+  }
+
+  useEffect(() => {
+    if (actionRef) {
+      actionRef.current = {
+        exportExcel: handleExportExcel,
+        openSendDialog: () => setSendDialogOpen(true),
+      }
+    }
+    return () => {
+      if (actionRef) actionRef.current = null
+    }
+  })
 
   return (
     <div className="report-page">
@@ -1662,6 +2079,29 @@ export function ReportPanel({
           })}
         </div>
       </section>
+
+      {sendDialogOpen && (
+        <SendReportDialog
+          team={team}
+          members={members}
+          memberMap={memberMap}
+          reportData={{
+            targetLabel,
+            compareLabel,
+            targetBounds,
+            compareBounds,
+            cutoffDateLabel,
+            memberFilterLabel,
+            targetMatrix,
+            compareMatrix,
+            currentReport,
+            REPORT_SECTIONS,
+          }}
+          onClose={() => setSendDialogOpen(false)}
+          repo={repo}
+          notify={notify}
+        />
+      )}
     </div>
   )
 }

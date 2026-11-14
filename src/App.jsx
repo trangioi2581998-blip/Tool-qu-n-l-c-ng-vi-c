@@ -9,6 +9,7 @@ import {
   CircleHelp,
   Crown,
   Ellipsis,
+  FileSpreadsheet,
   LayoutGrid,
   List,
   ListTodo,
@@ -20,6 +21,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
@@ -722,6 +724,7 @@ export default function App({
   const listRef = useRef(null)
   const searchRef = useRef(null)
   const locks = useRef(new Set())
+  const reportActionRef = useRef(null)
   const {
     tasks,
     members,
@@ -1608,6 +1611,21 @@ export default function App({
                         <UserRoundPlus size={18} /> Tạo tài khoản
                       </button>
                     )
+                  ) : view.kind === 'reports' ? (
+                    <>
+                      <button
+                        className="button hero-secondary"
+                        onClick={() => reportActionRef.current?.exportExcel?.()}
+                      >
+                        <FileSpreadsheet size={18} /> Xuất báo cáo
+                      </button>
+                      <button
+                        className="button hero-primary"
+                        onClick={() => reportActionRef.current?.openSendDialog?.()}
+                      >
+                        <Send size={18} /> Gửi báo cáo
+                      </button>
+                    </>
                   ) : isTeamMissing ? (
                     <button
                       className="button hero-primary"
@@ -1783,6 +1801,10 @@ export default function App({
               memberMap={memberMap}
               today={today}
               onOpen={openTask}
+              team={team}
+              actionRef={reportActionRef}
+              repo={repo}
+              notify={notify}
             />
           )}
           {view.kind === 'chat' && canAdd && (

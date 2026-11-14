@@ -5274,3 +5274,122 @@ h3 {
   min-height: 28px !important;
   font-size: 11px !important;
 }
+
+/* Gửi báo cáo công việc dialog styles */
+.send-report-form {
+  gap: 12px;
+}
+.send-report-summary-box {
+  background: #f8f6fc;
+  border: 1px solid #e9e2f5;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.send-report-summary-box .report-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.send-report-summary-box .report-summary-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.send-report-summary-box .report-summary-row strong {
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+  font-size: 12px;
+}
+.send-report-member-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.send-report-member-header .field-label-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.text-link-button {
+  border: none;
+  background: transparent;
+  color: var(--purple-dark);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.text-link-button:hover {
+  text-decoration: underline;
+}
+.send-report-members-list {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #e6e1ef;
+  border-radius: 9px;
+  padding: 5px;
+  display: grid;
+  gap: 3px;
+  background: #fdfcff;
+}
+.send-report-member-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+  border: 1px solid transparent;
+}
+.send-report-member-item:hover {
+  background: #f4effe;
+}
+.send-report-member-item.is-selected {
+  background: #faf7ff;
+  border-color: #ede5fa;
+}
+.send-report-member-item input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  accent-color: var(--purple);
+  margin: 0;
+  cursor: pointer;
+  flex: none;
+}
+.send-report-member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.send-report-member-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.send-report-member-email {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.up-text {
+  color: #16a34a;
+  font-weight: 600;
+}
+.down-text {
+  color: #dc2626;
+  font-weight: 600;
+}
