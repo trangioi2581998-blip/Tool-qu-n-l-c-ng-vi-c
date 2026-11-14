@@ -5862,6 +5862,16 @@ h3 {
 /* ==========================================================================
    Global Member Panel (Thành viên chung)
    ========================================================================== */
+.global-member-panel {
+  padding: 20px 22px 26px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(42, 27, 73, 0.05);
+}
+.global-member-panel .member-table-wrap {
+  padding: 0;
+}
 .global-member-toolbar {
   display: flex;
   gap: 12px;
@@ -6067,7 +6077,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 18px;
+  padding: 13px 18px;
   background: #fbf9fd;
   border-bottom: 1px solid transparent;
   cursor: pointer;
@@ -6150,7 +6160,7 @@ h3 {
   flex-shrink: 0;
 }
 .member-tree-team-body {
-  padding: 8px 16px 14px 44px;
+  padding: 12px 18px 16px 46px;
   background: white;
   position: relative;
 }
@@ -6160,7 +6170,7 @@ h3 {
   position: absolute;
   left: 31px;
   top: 0;
-  bottom: 24px;
+  bottom: 26px;
   width: 2px;
   background: #e8e1f5;
 }
@@ -6177,15 +6187,15 @@ h3 {
 .member-tree-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .member-tree-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 12px;
+  gap: 16px;
+  padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid #f2edf8;
+  border: 1px solid #f0eaf7;
   background: #fdfcfe;
   position: relative;
   transition: all 0.15s ease;
@@ -6194,9 +6204,9 @@ h3 {
 .member-tree-item::before {
   content: '';
   position: absolute;
-  left: -13px;
+  left: -15px;
   top: 50%;
-  width: 13px;
+  width: 15px;
   height: 2px;
   background: #e8e1f5;
 }
@@ -6258,5 +6268,10 @@ h3 {
   }
   .member-tree-item-actions {
     align-self: flex-end;
+  }
+}
+@media (max-width: 640px) {
+  .global-member-panel {
+    padding: 14px 12px 18px;
   }
 }
