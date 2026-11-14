@@ -65,3 +65,4 @@ using (sender_id = auth.uid() or nhip_viec_private.is_member(team_id, true));
 
 -- Enable real-time replication for team messages
 alter publication supabase_realtime add table public.work_team_messages;
+

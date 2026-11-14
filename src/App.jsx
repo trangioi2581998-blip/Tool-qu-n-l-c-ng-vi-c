@@ -1597,59 +1597,53 @@ export default function App({
               </div>
               <h1>{pageTitle}</h1>
               <p>{description}</p>
-              <div className="hero-actions">
-                {view.kind === 'members' ? (
-                  isOwner && (
+              {view.kind !== 'chat' && (
+                <div className="hero-actions">
+                  {view.kind === 'members' ? (
+                    isOwner && (
+                      <button
+                        className="button hero-primary"
+                        onClick={onCreateAccount}
+                      >
+                        <UserRoundPlus size={18} /> Tạo tài khoản
+                      </button>
+                    )
+                  ) : isTeamMissing ? (
                     <button
                       className="button hero-primary"
-                      onClick={onCreateAccount}
+                      onClick={() => onCreate('team')}
                     >
-                      <UserRoundPlus size={18} /> Tạo tài khoản
+                      <Plus size={18} /> Tạo nhóm
                     </button>
-                  )
-                ) : isTeamMissing ? (
-                  <button
-                    className="button hero-primary"
-                    onClick={() => onCreate('team')}
-                  >
-                    <Plus size={18} /> Tạo nhóm
-                  </button>
-                ) : (
-                  canCreateInView && (
+                  ) : (
+                    canCreateInView && (
+                      <button
+                        className="button hero-primary"
+                        disabled={!canAdd}
+                        onClick={() => openNew()}
+                      >
+                        <Plus size={19} strokeWidth={2.2} /> Tạo công việc
+                      </button>
+                    )
+                  )}
+                  {isMine && (
                     <button
-                      className="button hero-primary"
-                      disabled={!canAdd}
-                      onClick={() => openNew()}
+                      className="button hero-secondary"
+                      onClick={() => go('calendar')}
                     >
-                      <Plus size={19} strokeWidth={2.2} /> Tạo công việc
+                      <CalendarDays size={17} /> Xem lịch
                     </button>
-                  )
-                )}
-                {isMine && (
-                  <button
-                    className="button hero-secondary"
-                    onClick={() => go('calendar')}
-                  >
-                    <CalendarDays size={17} /> Xem lịch
-                  </button>
-                )}
-                {view.kind === 'calendar' && (
-                  <button
-                    className="button hero-secondary"
-                    onClick={() => go('mine')}
-                  >
-                    <ArrowLeft size={17} /> Việc của tôi
-                  </button>
-                )}
-                {view.kind === 'chat' && (
-                  <button
-                    className="button hero-secondary"
-                    onClick={() => go('team')}
-                  >
-                    <ArrowLeft size={17} /> Việc của nhóm
-                  </button>
-                )}
-              </div>
+                  )}
+                  {view.kind === 'calendar' && (
+                    <button
+                      className="button hero-secondary"
+                      onClick={() => go('mine')}
+                    >
+                      <ArrowLeft size={17} /> Việc của tôi
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <HeroArt />
           </section>
