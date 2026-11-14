@@ -1512,33 +1512,36 @@ export function SendReportDialog({
                     : 'gray'
 
               return (
-                <label
+                <div
                   key={member.user_id}
                   className={
-                    'send-report-member-item' +
-                    (checked ? ' is-selected' : '')
+                    'send-report-member-row' + (checked ? ' is-selected' : '')
                   }
+                  onClick={() => toggleMember(member.user_id)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleMember(member.user_id)}
-                  />
-                  <Avatar
-                    name={member.display_name}
-                    id={member.user_id}
-                    size="sm"
-                  />
-                  <div className="send-report-member-info">
+                  <div className="send-report-member-left">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {}}
+                      tabIndex={-1}
+                    />
+                    <Avatar
+                      name={member.display_name}
+                      id={member.user_id}
+                      size="sm"
+                    />
                     <span className="send-report-member-name">
                       {member.display_name}
                     </span>
-                    <span className="send-report-member-email">
-                      {member.email}
-                    </span>
+                    {member.email && (
+                      <span className="send-report-member-email">
+                        ({member.email})
+                      </span>
+                    )}
                   </div>
                   <span className={'badge ' + roleBadgeClass}>{roleLabel}</span>
-                </label>
+                </div>
               )
             })}
           </div>
@@ -1554,10 +1557,10 @@ export function SendReportDialog({
           />
         </label>
 
-        <div className="dialog-footer actions">
+        <div className="form-actions send-report-actions">
           <button
             type="button"
-            className="button"
+            className="button secondary"
             onClick={onClose}
             disabled={sending}
           >
@@ -1568,7 +1571,7 @@ export function SendReportDialog({
             className="button primary"
             disabled={sending || selectedMemberIds.length === 0}
           >
-            <Send size={16} /> {sending ? 'Đang gửi...' : 'Gửi báo cáo'}
+            <Send size={15} /> {sending ? 'Đang gửi...' : 'Gửi báo cáo'}
           </button>
         </div>
       </form>
