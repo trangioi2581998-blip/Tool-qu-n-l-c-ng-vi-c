@@ -36,3 +36,4 @@ on conflict (id) do update set
 update nhip_viec_private.email_outbox
 set failed_at = null, attempts = 0, next_attempt_at = now(), lease_id = null, lease_until = null, last_error = null
 where sent_at is null;
+

@@ -471,9 +471,11 @@ function prepareMessages(jobs, baseUrl) {
       // keep default URL
     }
     const greetingLine = job.name ? `Xin chào ${job.name},\n\n` : 'Xin chào bạn,\n\n'
-    const text = actionUrl
-      ? `${greetingLine}${job.body}\n\nXem chi tiết công việc: ${actionUrl}`
-      : `${greetingLine}${job.body}`
+    const text =
+      job.text ||
+      (actionUrl
+        ? `${greetingLine}${job.body}\n\nXem chi tiết công việc: ${actionUrl}`
+        : `${greetingLine}${job.body}`)
     const html =
       job.html ||
       buildHtmlEmail({

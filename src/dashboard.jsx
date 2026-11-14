@@ -1298,6 +1298,252 @@ const compareOptions = [
   { offset: -3, label: '3 tuần trước' },
 ]
 
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function buildReportHtmlEmail({
+  targetLabel,
+  compareLabel,
+  targetBounds,
+  compareBounds,
+  cutoffDateLabel,
+  memberFilterLabel,
+  senderName,
+  note,
+  targetMatrix,
+  compareMatrix,
+  currentReport,
+  REPORT_SECTIONS,
+  targetCutoff,
+  actionUrl,
+}) {
+  const totalDiff = targetMatrix.totalActive - compareMatrix.totalActive
+  const totalDiffText = totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`
+  const totalDiffColor =
+    totalDiff > 0 ? '#16a34a' : totalDiff < 0 ? '#dc2626' : '#6b7280'
+
+  let rowsHtml = ''
+  for (const sec of REPORT_SECTIONS) {
+    const levelCount = sec.levels.length
+    sec.levels.forEach((lev, levIdx) => {
+      const curTasks = targetMatrix.matrix[sec.key]?.[lev.key] || []
+      const curCount = curTasks.length
+      const prevCount = compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0
+      const diff = curCount - prevCount
+
+      const changedInGroup = currentReport.statusChanged.filter((t) => {
+        if (t.isDeleted) return sec.key === 'deleted'
+        if (sec.key === 'deleted') return false
+        const statusKey = getTaskEffectiveStatusKey(t)
+        if (statusKey !== sec.key) return false
+        const pace = getTaskPace(t, targetCutoff)
+        return pace === lev.key
+      })
+
+      const itemsToShow = changedInGroup.length > 0 ? changedInGroup : curTasks
+      const diffText = diff > 0 ? `+${diff}` : `${diff}`
+      const diffColor =
+        diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#9ca3af'
+
+      let detailsHtml = '<span style="color:#9ca3af;">—</span>'
+      if (itemsToShow.length > 0) {
+        detailsHtml =
+          '<ul style="margin:0;padding-left:16px;line-height:1.55;">' +
+          itemsToShow
+            .map((t) => {
+              const fromLabel = statuses[t.fromStatus]?.label || t.fromStatus
+              const toLabel = statuses[t.toStatus]?.label || t.toStatus
+              let text = ''
+              if (t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus) {
+                text = `• <strong>"${escapeHtml(t.title)}"</strong> <span style="color:#6b7280;">${escapeHtml(fromLabel)} ➔ ${escapeHtml(toLabel)}</span>`
+              } else {
+                const dueStr = t.due_date
+                  ? ` <span style="color:#7c3aed;font-size:11.5px;">(${escapeHtml(t.due_date)})</span>`
+                  : ''
+                text = `• <strong>"${escapeHtml(t.title)}"</strong>${dueStr}`
+              }
+              return `<li style="margin-bottom:4px;font-size:12.5px;color:#281b4d;list-style-type:disc;">${text}</li>`
+            })
+            .join('') +
+          '</ul>'
+      }
+
+      rowsHtml += `
+        <tr>
+          ${
+            levIdx === 0
+              ? `<td rowspan="${levelCount}" style="padding:10px 12px;font-weight:700;vertical-align:top;border:1px solid #e4def0;background:#faf8fd;color:#281b4d;font-size:13px;">${escapeHtml(sec.label)}</td>`
+              : ''
+          }
+          <td style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;color:#374151;font-size:13px;">${escapeHtml(lev.label || '—')}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;color:#111827;font-size:13.5px;">${curCount}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;vertical-align:top;border:1px solid #e4def0;color:${diffColor};font-size:13.5px;">${diffText}</td>
+          <td style="padding:10px 12px;vertical-align:top;border:1px solid #e4def0;">${detailsHtml}</td>
+        </tr>
+      `
+    })
+  }
+
+  const noteBlock = note?.trim()
+    ? `
+    <div style="background:#f6f2fe;border-left:4px solid #7c4ddb;padding:12px 16px;border-radius:6px;margin:16px 0 20px;font-size:13px;line-height:1.55;color:#3b246a;">
+      <strong>Lời nhắn kèm theo:</strong> ${escapeHtml(note.trim())}
+    </div>
+  `
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo cáo trạng thái & tiến độ công việc</title>
+</head>
+<body style="margin:0;padding:24px 12px;background-color:#f4f5f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#1f2937;">
+  <div style="max-width:880px;margin:0 auto;background-color:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #ded8eb;box-shadow:0 4px 20px rgba(40,25,81,0.06);">
+    <!-- Header banner -->
+    <div style="background:#4e3596;padding:22px 24px;border-bottom:3px solid #6c47bf;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e9d8fd;margin-bottom:4px;">
+        Nhịp việc · Báo cáo công việc
+      </div>
+      <div style="font-size:20px;font-weight:700;line-height:1.35;color:#ffffff;">
+        Báo cáo trạng thái & tiến độ công việc
+      </div>
+      <div style="font-size:12.5px;color:#d8ccf5;margin-top:4px;">
+        Đánh giá tiến độ dựa vào Ngày giao và Hạn hoàn thành lũy kế đến ngày <strong>${escapeHtml(cutoffDateLabel)}</strong>, đối chiếu với <strong>${escapeHtml(compareLabel.toLowerCase())}</strong>
+      </div>
+    </div>
+
+    <!-- Metadata & Note -->
+    <div style="padding:18px 24px 12px;background:#fbfaff;border-bottom:1px solid #eee8f8;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr>
+          <td style="padding:4px 0;width:50%;color:#4b5563;">
+            <span style="color:#6b7280;">Kỳ báo cáo:</span> <strong style="color:#1e1438;">${escapeHtml(targetLabel)} (${escapeHtml(targetBounds.rangeLabel)})</strong>
+          </td>
+          <td style="padding:4px 0;width:50%;color:#4b5563;">
+            <span style="color:#6b7280;">Đối chiếu với:</span> <strong style="color:#1e1438;">${escapeHtml(compareLabel)} (${escapeHtml(compareBounds.rangeLabel)})</strong>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;color:#4b5563;">
+            <span style="color:#6b7280;">Nhân sự lọc:</span> <strong style="color:#1e1438;">${escapeHtml(memberFilterLabel)}</strong>
+          </td>
+          <td style="padding:4px 0;color:#4b5563;">
+            <span style="color:#6b7280;">Người gửi:</span> <strong style="color:#1e1438;">${escapeHtml(senderName || 'Trưởng nhóm')}</strong>
+          </td>
+        </tr>
+      </table>
+      ${noteBlock}
+    </div>
+
+    <!-- Main Table -->
+    <div style="padding:20px 24px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;border:1px solid #dcd5ec;font-size:13px;">
+        <thead>
+          <tr style="background:#4e3596;color:#ffffff;font-size:12.5px;">
+            <th style="padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Trạng thái công việc</th>
+            <th style="padding:10px 12px;width:18%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Mức độ hoàn thành</th>
+            <th style="padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;">Số lượng lũy kế đến ${escapeHtml(cutoffDateLabel)}</th>
+            <th style="padding:10px 8px;width:14%;text-align:center;border:1px solid #5d42ab;font-weight:700;">So sánh với ${escapeHtml(compareLabel)}</th>
+            <th style="padding:10px 12px;width:36%;text-align:left;border:1px solid #5d42ab;font-weight:700;">Chi tiết Đầu mục công việc thay đổi trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+        <tfoot>
+          <tr style="background:#f4effc;font-weight:700;border-top:2px solid #6b46c1;">
+            <td colspan="2" style="padding:12px;border:1px solid #e4def0;color:#281b4d;font-size:13.5px;">Tổng công việc</td>
+            <td style="padding:12px 8px;text-align:center;border:1px solid #e4def0;color:#111827;font-size:14px;">${targetMatrix.totalActive}</td>
+            <td style="padding:12px 8px;text-align:center;border:1px solid #e4def0;color:${totalDiffColor};font-size:14px;">${totalDiffText}</td>
+            <td style="padding:12px;border:1px solid #e4def0;"></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px dashed #e2daf0;">
+        <a href="${actionUrl}" style="display:inline-block;padding:11px 24px;background:#6745d6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13.5px;">
+          Mở Nhịp việc để xem chi tiết →
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+function buildReportMarkdownTable({
+  targetLabel,
+  compareLabel,
+  cutoffDateLabel,
+  targetMatrix,
+  compareMatrix,
+  currentReport,
+  REPORT_SECTIONS,
+  targetCutoff,
+}) {
+  const totalDiff = targetMatrix.totalActive - compareMatrix.totalActive
+  const totalDiffText = totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`
+
+  const header = `| Trạng thái công việc | Mức độ hoàn thành | Lũy kế đến ${cutoffDateLabel} | So với ${compareLabel} | Chi tiết Đầu mục công việc thay đổi trạng thái |\n| :--- | :--- | :---: | :---: | :--- |`
+  const rows = []
+
+  for (const sec of REPORT_SECTIONS) {
+    sec.levels.forEach((lev, levIdx) => {
+      const curTasks = targetMatrix.matrix[sec.key]?.[lev.key] || []
+      const curCount = curTasks.length
+      const prevCount = compareMatrix.matrix[sec.key]?.[lev.key]?.length || 0
+      const diff = curCount - prevCount
+
+      const changedInGroup = currentReport.statusChanged.filter((t) => {
+        if (t.isDeleted) return sec.key === 'deleted'
+        if (sec.key === 'deleted') return false
+        const statusKey = getTaskEffectiveStatusKey(t)
+        if (statusKey !== sec.key) return false
+        const pace = getTaskPace(t, targetCutoff)
+        return pace === lev.key
+      })
+
+      const itemsToShow = changedInGroup.length > 0 ? changedInGroup : curTasks
+      const diffText = diff > 0 ? `+${diff}` : `${diff}`
+
+      const details = itemsToShow
+        .slice(0, 5)
+        .map((t) => {
+          if (t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus) {
+            const from = statuses[t.fromStatus]?.label || t.fromStatus
+            const to = statuses[t.toStatus]?.label || t.toStatus
+            return `• "${t.title}" (${from} ➔ ${to})`
+          }
+          return `• "${t.title}"`
+        })
+        .join('<br>')
+
+      const detailsCell =
+        details +
+        (itemsToShow.length > 5
+          ? `<br>*(+${itemsToShow.length - 5} công việc khác)*`
+          : '') || '—'
+
+      rows.push(
+        `| ${levIdx === 0 ? `**${sec.label}**` : ''} | ${lev.label || '—'} | **${curCount}** | ${diffText} | ${detailsCell} |`,
+      )
+    })
+  }
+
+  rows.push(
+    `| **Tổng công việc** | | **${targetMatrix.totalActive}** | **${totalDiffText}** | |`,
+  )
+
+  return `${header}\n${rows.join('\n')}`
+}
+
 export function SendReportDialog({
   team,
   members = [],
@@ -1344,6 +1590,7 @@ export function SendReportDialog({
     compareMatrix,
     currentReport,
     REPORT_SECTIONS,
+    targetCutoff,
   } = reportData
 
   const totalDiff = targetMatrix.totalActive - compareMatrix.totalActive
@@ -1358,12 +1605,65 @@ export function SendReportDialog({
     setError('')
 
     try {
-      const selectedNames = members
-        .filter((m) => selectedMemberIds.includes(m.user_id))
+      const selectedMembers = members.filter((m) =>
+        selectedMemberIds.includes(m.user_id),
+      )
+      const selectedNames = selectedMembers
         .map((m) => m.display_name)
         .join(', ')
 
-      const summaryLines = []
+      // 1. Tạo bảng định dạng Markdown để gửi vào Chat nhóm
+      const markdownTable = buildReportMarkdownTable({
+        targetLabel,
+        compareLabel,
+        cutoffDateLabel,
+        targetMatrix,
+        compareMatrix,
+        currentReport,
+        REPORT_SECTIONS,
+        targetCutoff,
+      })
+
+      const chatBodyParts = [
+        `📊 **BÁO CÁO TRẠNG THÁI & TIẾN ĐỘ CÔNG VIỆC**`,
+        `🗓 **Kỳ báo cáo:** ${targetLabel} (${targetBounds.rangeLabel}) | **Đối chiếu:** ${compareLabel} (${compareBounds.rangeLabel})`,
+        `👤 **Nhân sự lọc:** ${memberFilterLabel} | **Người gửi:** ${repo?.user?.name || 'Trưởng nhóm'}`,
+        `👥 **Người nhận (${selectedMemberIds.length}):** ${selectedNames}`,
+      ]
+
+      if (note.trim()) {
+        chatBodyParts.push(`\n💬 **Lời nhắn kèm theo:**\n${note.trim()}`)
+      }
+
+      chatBodyParts.push(`\n${markdownTable}`)
+
+      const messageBody = chatBodyParts.join('\n')
+
+      if (team?.id && repo?.sendTeamMessage) {
+        await repo.sendTeamMessage(team.id, messageBody)
+      }
+
+      // 2. Tạo email với BẢNG ĐẦY ĐỦ HTML chuẩn đẹp gửi tới hòm thư cá nhân
+      const emailSubject = `[Nhịp việc] Báo cáo trạng thái & tiến độ: ${team?.name || 'Nhóm'} - ${targetLabel}`
+      const emailHtml = buildReportHtmlEmail({
+        team,
+        targetLabel,
+        compareLabel,
+        targetBounds,
+        compareBounds,
+        cutoffDateLabel,
+        memberFilterLabel,
+        senderName: repo?.user?.name || 'Trưởng nhóm',
+        note,
+        targetMatrix,
+        compareMatrix,
+        currentReport,
+        REPORT_SECTIONS,
+        targetCutoff,
+        actionUrl: location.origin + location.pathname,
+      })
+
+      const summaryTextLines = []
       for (const sec of REPORT_SECTIONS) {
         if (sec.key === 'deleted') continue
         const secCount = sec.levels.reduce(
@@ -1379,59 +1679,9 @@ export function SendReportDialog({
         const diff = secCount - prevCount
         const diffStr =
           diff > 0 ? `(+${diff})` : diff < 0 ? `(${diff})` : `(0)`
-        summaryLines.push(`• **${sec.label}**: ${secCount} việc ${diffStr}`)
+        summaryTextLines.push(`• ${sec.label}: ${secCount} việc ${diffStr}`)
       }
 
-      const changedTaskTitles = currentReport.statusChanged
-        .slice(0, 10)
-        .map((t) => {
-          const from = statuses[t.fromStatus]?.label || t.fromStatus
-          const to = statuses[t.toStatus]?.label || t.toStatus
-          if (t.fromStatus && t.toStatus && t.fromStatus !== t.toStatus) {
-            return `• "${t.title}" (${from} ➔ ${to})`
-          }
-          return `• "${t.title}"`
-        })
-
-      const bodyParts = [
-        `📊 **BÁO CÁO TRẠNG THÁI & TIẾN ĐỘ CÔNG VIỆC**`,
-        `🗓 **Kỳ báo cáo:** ${targetLabel} (${targetBounds.rangeLabel})`,
-        `🔄 **So sánh với:** ${compareLabel} (${compareBounds.rangeLabel})`,
-        `👤 **Nhân sự lọc:** ${memberFilterLabel}`,
-        `👥 **Người nhận (${selectedMemberIds.length}):** ${selectedNames}`,
-      ]
-
-      if (note.trim()) {
-        bodyParts.push(`\n💬 **Lời nhắn kèm theo:**\n${note.trim()}`)
-      }
-
-      bodyParts.push(
-        `\n📈 **TỔNG HỢP TIẾN ĐỘ LŨY KẾ:**\n` +
-          summaryLines.join('\n') +
-          `\n➡️ **Tổng số việc:** ${targetMatrix.totalActive} việc (${totalDiff >= 0 ? '+' : ''}${totalDiff} so với ${compareLabel})`,
-      )
-
-      if (changedTaskTitles.length > 0) {
-        bodyParts.push(
-          `\n📌 **CÁC ĐẦU MỤC CÔNG VIỆC THAY ĐỔI TRONG KỲ:**\n` +
-            changedTaskTitles.join('\n') +
-            (currentReport.statusChanged.length > 10
-              ? `\n• *(và ${currentReport.statusChanged.length - 10} công việc khác)*`
-              : ''),
-        )
-      }
-
-      const messageBody = bodyParts.join('\n')
-
-      if (team?.id && repo?.sendTeamMessage) {
-        await repo.sendTeamMessage(team.id, messageBody)
-      }
-
-      // Gửi email thực tế tới các thành viên được chọn
-      const selectedMembers = members.filter((m) =>
-        selectedMemberIds.includes(m.user_id),
-      )
-      const emailSubject = `[Nhịp việc] Báo cáo tiến độ: ${team?.name || 'Nhóm'} - ${targetLabel}`
       const emailBody = [
         `Báo cáo trạng thái & tiến độ công việc`,
         `Nhóm: ${team?.name || 'Product & CX'}`,
@@ -1443,7 +1693,7 @@ export function SendReportDialog({
         `Tổng số công việc: ${targetMatrix.totalActive} việc (${totalDiff >= 0 ? '+' : ''}${totalDiff} so với ${compareLabel})`,
         '',
         'TỔNG HỢP TIẾN ĐỘ:',
-        ...summaryLines.map((l) => l.replace(/\*\*/g, '')),
+        ...summaryTextLines,
       ]
         .filter(Boolean)
         .join('\n')
@@ -1455,6 +1705,7 @@ export function SendReportDialog({
           recipients: selectedMembers,
           subject: emailSubject,
           body: emailBody,
+          html: emailHtml,
         })
       }
 
@@ -1470,7 +1721,7 @@ export function SendReportDialog({
         )
       } else {
         notify?.(
-          `Đã gửi báo cáo tiến độ thành công tới Email của ${emailResult.deliveredCount} thành viên!`,
+          `Đã gửi bảng báo cáo tiến độ thành công tới Email của ${emailResult.deliveredCount} thành viên!`,
         )
       }
 
@@ -2143,6 +2394,7 @@ export function ReportPanel({
             compareMatrix,
             currentReport,
             REPORT_SECTIONS,
+            targetCutoff,
           }}
           onClose={() => setSendDialogOpen(false)}
           repo={repo}
