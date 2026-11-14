@@ -558,6 +558,22 @@ export function createBackend(authUser) {
       } catch {}
       return newMsg
     },
+    async deleteTeamMessage(teamId, messageId) {
+      if (!teamId || !messageId) return false
+      try {
+        await client.from('work_team_messages').delete().eq('id', messageId)
+      } catch (err) {
+        console.warn('work_team_messages delete fallback:', err)
+      }
+      try {
+        const raw = localStorage.getItem('nhip-viec.chat.' + teamId)
+        if (raw) {
+          const list = JSON.parse(raw).filter((m) => m.id !== messageId)
+          localStorage.setItem('nhip-viec.chat.' + teamId, JSON.stringify(list))
+        }
+      } catch {}
+      return true
+    },
     listExtensions: (task) =>
       allRows(() =>
         client

@@ -1649,42 +1649,8 @@ export function SendReportDialog({
       const selectedMembers = members.filter((m) =>
         selectedMemberIds.includes(m.user_id),
       )
-      const selectedNames = selectedMembers
-        .map((m) => m.display_name)
-        .join(', ')
 
-      // 1. Tạo bảng định dạng Markdown để gửi vào Chat nhóm
-      const markdownTable = buildReportMarkdownTable({
-        targetLabel,
-        compareLabel,
-        cutoffDateLabel,
-        targetMatrix,
-        compareMatrix,
-        currentReport,
-        REPORT_SECTIONS,
-        targetCutoff,
-      })
-
-      const chatBodyParts = [
-        `📊 **BÁO CÁO TRẠNG THÁI & TIẾN ĐỘ CÔNG VIỆC**`,
-        `🗓 **Kỳ báo cáo:** ${targetLabel} (${targetBounds.rangeLabel}) | **Đối chiếu:** ${compareLabel} (${compareBounds.rangeLabel})`,
-        `👤 **Nhân sự lọc:** ${memberFilterLabel} | **Người gửi:** ${repo?.user?.name || 'Trưởng nhóm'}`,
-        `👥 **Người nhận (${selectedMemberIds.length}):** ${selectedNames}`,
-      ]
-
-      if (note.trim()) {
-        chatBodyParts.push(`\n💬 **Lời nhắn kèm theo:**\n${note.trim()}`)
-      }
-
-      chatBodyParts.push(`\n${markdownTable}`)
-
-      const messageBody = chatBodyParts.join('\n')
-
-      if (team?.id && repo?.sendTeamMessage) {
-        await repo.sendTeamMessage(team.id, messageBody)
-      }
-
-      // 2. Tạo email với BẢNG ĐẦY ĐỦ HTML chuẩn đẹp gửi tới hòm thư cá nhân
+      // Tạo email với BẢNG ĐẦY ĐỦ HTML chuẩn đẹp gửi tới hòm thư cá nhân của các thành viên được chọn
       const emailSubject = `[Nhịp việc] Báo cáo trạng thái & tiến độ: ${team?.name || 'Nhóm'} - ${targetLabel}`
       const emailHtml = buildReportHtmlEmail({
         team,
@@ -1752,12 +1718,12 @@ export function SendReportDialog({
 
       if (!emailResult?.configured) {
         notify?.(
-          `Đã gửi vào Chat nhóm. Lưu ý: Chưa gửi được Email thực tế do hệ thống chưa cấu hình tài khoản gửi Email (SMTP/Gmail/Resend). Hãy bấm vào biểu tượng Chuông thông báo góc trên để cài đặt Email.`,
+          `Lưu ý: Chưa gửi được Email do hệ thống chưa cấu hình tài khoản gửi Email (SMTP/Gmail/Resend). Hãy bấm vào biểu tượng Chuông thông báo góc trên để cài đặt Email.`,
           true,
         )
       } else if (!emailResult.success) {
         notify?.(
-          `Đã gửi vào Chat nhóm, nhưng gửi Email gặp lỗi: ${emailResult.detail}`,
+          `Gửi Email không thành công: ${emailResult.detail}`,
           true,
         )
       } else {

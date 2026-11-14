@@ -1378,5 +1378,15 @@ export function createDemo(userId, onAccounts) {
       save()
       return msg
     },
+    async deleteTeamMessage(teamId, messageId) {
+      if (!teamId || !messageId) return false
+      if (state.teamMessages?.[teamId]) {
+        state.teamMessages[teamId] = state.teamMessages[teamId].filter(
+          (m) => m.id !== messageId,
+        )
+        save()
+      }
+      return true
+    },
   }
 }

@@ -7,6 +7,7 @@ import {
   Sparkles,
   ShieldCheck,
   Crown,
+  Trash2,
 } from 'lucide-react'
 import { Avatar } from './ui.jsx'
 
@@ -81,6 +82,17 @@ export function TeamChatPanel({
       console.error('Không gửi được tin nhắn:', err)
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleDelete = async (msgId) => {
+    if (!msgId || !team) return
+    try {
+      setMessages((prev) => prev.filter((m) => m.id !== msgId))
+      await repo.deleteTeamMessage?.(team.id, msgId)
+    } catch (err) {
+      console.error('Lỗi khi xóa tin nhắn:', err)
+      loadMessages(true)
     }
   }
 
@@ -180,6 +192,8 @@ export function TeamChatPanel({
               const isMe = msg.sender_id === userId
               const senderMember = memberMap[msg.sender_id] || members.find((m) => m.user_id === msg.sender_id)
               const senderRole = senderMember?.role
+              const myRole = memberMap[userId]?.role || members.find((m) => m.user_id === userId)?.role
+              const canDelete = isMe || myRole === 'owner' || myRole === 'deputy'
               const prevMsg = messages[index - 1]
               const showDateDivider =
                 !prevMsg ||
@@ -220,7 +234,19 @@ export function TeamChatPanel({
                       )}
                       <div className="team-msg-bubble">
                         <p className="team-msg-text">{msg.body}</p>
-                        <span className="team-msg-time">{formatMsgTime(msg.created_at)}</span>
+                        <div className="team-msg-bubble-meta">
+                          <span className="team-msg-time">{formatMsgTime(msg.created_at)}</span>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              className="team-msg-delete-btn"
+                              title="Xóa tin nhắn này"
+                              onClick={() => handleDelete(msg.id)}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

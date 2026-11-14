@@ -2447,12 +2447,36 @@ h3 {
   font-size: 13px;
   line-height: 1.45;
 }
-.team-msg-time {
-  display: block;
-  font-size: 10px;
+.team-msg-bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
   margin-top: 3px;
+}
+.team-msg-time {
+  font-size: 10px;
   opacity: 0.75;
-  text-align: right;
+}
+.team-msg-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 4px;
+  opacity: 0.55;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.team-msg-bubble:hover .team-msg-delete-btn {
+  opacity: 0.85;
+}
+.team-msg-delete-btn:hover {
+  opacity: 1 !important;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
 }
 .team-chat-input-bar {
   display: flex;
