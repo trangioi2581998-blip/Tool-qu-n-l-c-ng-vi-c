@@ -38,6 +38,7 @@ import {
   PasswordInput,
   readableError,
 } from './ui.jsx'
+import { isSuperAdmin } from './model.js'
 
 /**
  * Dialog thêm thành viên vào DỰ ÁN (lấy từ Thành viên chung)
@@ -45,6 +46,7 @@ import {
 export function AddTeamMemberDialog({
   team,
   repo,
+  isTeamLead,
   onClose,
   onAdded,
   onOpenCreateDirectoryMember,
@@ -121,6 +123,10 @@ export function AddTeamMemberDialog({
   async function submit(e) {
     e.preventDefault()
     if (selectedIds.size === 0 || busy) return
+    if (typeof isTeamLead === 'function' && !isTeamLead(team?.id)) {
+      setError('Chỉ có trưởng nhóm mới có quyền thêm thành viên vào nhóm này.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -555,11 +561,16 @@ export function AssignToTeamDialog({
   member,
   teams = [],
   repo,
+  isTeamLead,
   onClose,
   onAssigned,
 }) {
   const currentTeamIds = new Set((member.teams || []).map((t) => t.id))
-  const eligibleTeams = teams.filter((t) => !currentTeamIds.has(t.id))
+  const eligibleTeams = teams.filter((t) => {
+    if (currentTeamIds.has(t.id)) return false
+    if (typeof isTeamLead === 'function') return isTeamLead(t.id)
+    return true
+  })
   const [selectedTeamId, setSelectedTeamId] = useState(
     eligibleTeams[0]?.id || '',
   )
@@ -570,6 +581,10 @@ export function AssignToTeamDialog({
   async function submit(e) {
     e.preventDefault()
     if (!selectedTeamId || busy) return
+    if (typeof isTeamLead === 'function' && !isTeamLead(selectedTeamId)) {
+      setError('Chỉ có trưởng nhóm mới có quyền thêm thành viên vào nhóm này.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -855,6 +870,24 @@ export function GlobalMemberPanel({
       })
   }
 
+  // Kiểm tra quyền Trưởng nhóm của một team cụ thể
+  const isTeamLead = (teamId) => {
+    if (isSuperAdmin(repo?.user)) return true
+    const teamMems = getTeamMembers(teamId)
+    const myMemInTeam = teamMems.find((m) => m.user_id === currentUserId)
+    if (myMemInTeam?.role === 'owner') return true
+
+    const myUser = members.find((m) => m.user_id === currentUserId)
+    const myTeam = myUser?.teams?.find((team) => team.id === teamId)
+    if (myTeam?.role === 'owner') return true
+
+    return false
+  }
+
+  const hasAnyLeadTeam = useMemo(() => {
+    return teams.some((t) => isTeamLead(t.id))
+  }, [teams, members, currentUserId, repo?.user])
+
   const unassignedMembers = useMemo(() => {
     return members.filter((m) => !m.teams || m.teams.length === 0)
   }, [members])
@@ -948,6 +981,7 @@ export function GlobalMemberPanel({
               )
             })
             const isExpanded = expandedTeamIds.has(t.id) || Boolean(q)
+            const canManageThisTeam = isTeamLead(t.id)
 
             return (
               <div
@@ -984,7 +1018,7 @@ export function GlobalMemberPanel({
                       )}
                     </span>
                     <h3>{t.name}</h3>
-                    {onEditTeam && (
+                    {onEditTeam && canManageThisTeam && (
                       <button
                         type="button"
                         className="icon-button edit-team-inline-btn"
@@ -1003,20 +1037,22 @@ export function GlobalMemberPanel({
                     </span>
                   </div>
 
-                  <div
-                    className="member-tree-team-actions"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      className="button secondary sm"
-                      onClick={() => setAddingToTeam(t)}
-                      title="Thêm thành viên vào dự án này"
+                  {canManageThisTeam && (
+                    <div
+                      className="member-tree-team-actions"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <UserPlus size={14} />
-                      <span className="btn-label-desktop">Thêm thành viên</span>
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="button secondary sm"
+                        onClick={() => setAddingToTeam(t)}
+                        title="Thêm thành viên vào dự án này"
+                      >
+                        <UserPlus size={14} />
+                        <span className="btn-label-desktop">Thêm thành viên</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Danh sách thành viên bên trong Team */}
@@ -1025,13 +1061,15 @@ export function GlobalMemberPanel({
                     {teamMems.length === 0 ? (
                       <div className="member-tree-empty-team">
                         <p>Nhóm này hiện chưa có thành viên nào.</p>
-                        <button
-                          type="button"
-                          className="button secondary sm"
-                          onClick={() => setAddingToTeam(t)}
-                        >
-                          <UserPlus size={14} /> Chọn thêm thành viên vào nhóm
-                        </button>
+                        {canManageThisTeam && (
+                          <button
+                            type="button"
+                            className="button secondary sm"
+                            onClick={() => setAddingToTeam(t)}
+                          >
+                            <UserPlus size={14} /> Chọn thêm thành viên vào nhóm
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="member-tree-list">
@@ -1098,7 +1136,7 @@ export function GlobalMemberPanel({
                               </div>
 
                               <div className="member-tree-item-actions">
-                                {role !== 'owner' && (
+                                {canManageThisTeam && role !== 'owner' && (
                                   <Dropdown
                                     label={`Thao tác với ${m.display_name}`}
                                     className="action-dropdown member-action-dropdown"
@@ -1242,15 +1280,17 @@ export function GlobalMemberPanel({
                           <span className="badge gray">Chưa vào nhóm</span>
                         </div>
 
-                        <div className="member-tree-item-actions">
-                          <button
-                            type="button"
-                            className="button secondary sm"
-                            onClick={() => setAssigningMember(m)}
-                          >
-                            <FolderPlus size={14} /> Gán vào nhóm…
-                          </button>
-                        </div>
+                        {hasAnyLeadTeam && (
+                          <div className="member-tree-item-actions">
+                            <button
+                              type="button"
+                              className="button secondary sm"
+                              onClick={() => setAssigningMember(m)}
+                            >
+                              <FolderPlus size={14} /> Gán vào nhóm…
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1333,27 +1373,28 @@ export function GlobalMemberPanel({
                         </div>
                       </td>
                       <td className="member-col-actions">
-                        <Dropdown
-                          label={`Thao tác với ${m.display_name}`}
-                          className="action-dropdown member-action-dropdown"
-                          trigger={<Ellipsis size={18} />}
-                        >
-                          {(close) => (
-                            <>
-                              <button
-                                type="button"
-                                className="member-menu-item"
-                                onClick={() => {
-                                  close()
-                                  setAssigningMember(m)
-                                }}
-                              >
-                                <FolderPlus size={15} /> Thêm vào nhóm…
-                              </button>
-
-                            </>
-                          )}
-                        </Dropdown>
+                        {hasAnyLeadTeam && (
+                          <Dropdown
+                            label={`Thao tác với ${m.display_name}`}
+                            className="action-dropdown member-action-dropdown"
+                            trigger={<Ellipsis size={18} />}
+                          >
+                            {(close) => (
+                              <>
+                                <button
+                                  type="button"
+                                  className="member-menu-item"
+                                  onClick={() => {
+                                    close()
+                                    setAssigningMember(m)
+                                  }}
+                                >
+                                  <FolderPlus size={15} /> Thêm vào nhóm…
+                                </button>
+                              </>
+                            )}
+                          </Dropdown>
+                        )}
                       </td>
                     </tr>
                   )
@@ -1369,6 +1410,7 @@ export function GlobalMemberPanel({
         <AddTeamMemberDialog
           team={addingToTeam}
           repo={repo}
+          isTeamLead={isTeamLead}
           onClose={() => setAddingToTeam(null)}
           onAdded={() => {
             setAddingToTeam(null)
@@ -1402,6 +1444,7 @@ export function GlobalMemberPanel({
           member={assigningMember}
           teams={teams}
           repo={repo}
+          isTeamLead={isTeamLead}
           onClose={() => setAssigningMember(null)}
           onAssigned={(updated) => {
             setMembers((cur) =>

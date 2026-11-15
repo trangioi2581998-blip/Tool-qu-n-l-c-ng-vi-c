@@ -2101,20 +2101,29 @@ export default function App({
       {modal?.type === 'invite' && team && (
         <InviteDialog {...{ repo, team }} onClose={() => setModal(null)} />
       )}
-      {modal?.type === 'add-team-member' && team && (
+      {modal?.type === 'add-team-member' && team && (isOwner || isAdmin) && (
         <AddTeamMemberDialog
           team={team}
           repo={repo}
+          isTeamLead={() => isOwner || isAdmin}
           onClose={() => setModal(null)}
           onAdded={memberCreated}
-          onNavigateToDepartments={() => {
-            setModal(null)
-            setView({ kind: 'departments' })
-          }}
-          onOpenCreateDirectoryMember={() => {
-            setModal(null)
-            setView({ kind: 'departments' })
-          }}
+          onNavigateToDepartments={
+            isAdmin
+              ? () => {
+                  setModal(null)
+                  setView({ kind: 'departments' })
+                }
+              : undefined
+          }
+          onOpenCreateDirectoryMember={
+            isAdmin
+              ? () => {
+                  setModal(null)
+                  setView({ kind: 'departments' })
+                }
+              : undefined
+          }
         />
       )}
       {modal?.type === 'create-directory-member' && (
