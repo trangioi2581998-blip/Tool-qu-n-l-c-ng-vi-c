@@ -87,7 +87,7 @@ begin
         v_rec.team_id,
         now()
       )
-      on conflict (event_key) do nothing;
+      on conflict on constraint email_outbox_event_key_recipient_id_key do nothing;
 
       if found then
         v_inserted := v_inserted + 1;
@@ -113,5 +113,52 @@ begin
   end if;
 
   return v_inserted;
+end;
+$$;
+
+-- Wrapper public RPC cho phép web client hoặc webhook gọi kích hoạt kiểm tra nhắc hạn
+create or replace function public.work_trigger_due_reminders()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, nhip_viec_private, auth, extensions, net
+as $$
+declare
+  v_count integer;
+begin
+  v_count := nhip_viec_private.dispatch_due_reminders();
+  return jsonb_build_object('queued_reminders', v_count);
+end;
+$$;
+
+grant execute on function public.work_trigger_due_reminders() to authenticated, anon;
+
+-- Đăng ký pg_cron chạy tự động 2 lần/ngày: 08:30 sáng và 14:30 chiều (giờ VN = UTC+7)
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    begin
+      perform cron.unschedule('nhip-viec-due-reminders-morning');
+    exception when others then null;
+    end;
+    begin
+      perform cron.unschedule('nhip-viec-due-reminders-afternoon');
+    exception when others then null;
+    end;
+
+    -- 08:30 VN = 01:30 UTC
+    perform cron.schedule(
+      'nhip-viec-due-reminders-morning',
+      '30 1 * * *',
+      'select nhip_viec_private.dispatch_due_reminders();'
+    );
+
+    -- 14:30 VN = 07:30 UTC
+    perform cron.schedule(
+      'nhip-viec-due-reminders-afternoon',
+      '30 7 * * *',
+      'select nhip_viec_private.dispatch_due_reminders();'
+    );
+  end if;
 end;
 $$;

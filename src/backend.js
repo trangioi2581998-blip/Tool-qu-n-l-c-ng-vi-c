@@ -52,6 +52,13 @@ export function createBackend(authUser) {
     if (dispatching) return { sent: 0, failed: 0 }
     dispatching = true
     try {
+      // Tự động kích hoạt kiểm tra công việc gần đến hạn (nếu đến ca sáng/chiều)
+      try {
+        await client.rpc('work_trigger_due_reminders')
+      } catch {
+        // bỏ qua nếu RPC chưa được chạy migration trên db
+      }
+
       const claimed = await client
         .rpc('work_claim_pending_emails', { batch_size: 15 })
         .then(result)
