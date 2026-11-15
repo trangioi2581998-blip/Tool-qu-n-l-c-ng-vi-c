@@ -1575,8 +1575,8 @@ export default function App({
             <button
               type="button"
               className="icon-button bell-button"
-              aria-label="Thông báo & Email"
-              title="Thông báo & Cấu hình Email"
+              aria-label="Thông báo"
+              title="Thông báo"
               onClick={() => onCreate('mail')}
             >
               <Bell size={17} />
