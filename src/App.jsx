@@ -76,6 +76,7 @@ import {
   taskLevelCode,
   taskCompletionError,
   todayInVietnam,
+  isSuperAdmin,
 } from './model.js'
 import {
   Avatar,
@@ -796,6 +797,7 @@ export default function App({
     (item) => item.user_id === repo.user.id && item.role === 'deputy',
   )
   const isManager = isOwner || isDeputy
+  const isAdmin = isSuperAdmin(repo.user)
   const taskMap = Object.fromEntries(tasks.map((task) => [task.id, task]))
   const childrenByTask = {}
   for (const task of tasks) {
@@ -1715,7 +1717,7 @@ export default function App({
                       </button>
                     )
                   ) : view.kind === 'departments' ? (
-                    isOwner && (
+                    isAdmin && (
                       <button
                         className="button hero-primary"
                         onClick={() =>
@@ -1986,14 +1988,19 @@ export default function App({
               </div>
             ))}
           {!loading && view.kind === 'departments' &&
-            (isOwner ? (
+            (isOwner || isAdmin ? (
               <DepartmentPanel
                 repo={repo}
                 currentUserId={repo.user.id}
+                isSuperAdmin={isAdmin}
                 notify={notify}
-                onOpenCreateDept={() =>
-                  setModal({ type: 'create-department' })
-                }
+                onOpenCreateDept={() => {
+                  if (isAdmin) {
+                    setModal({ type: 'create-department' })
+                  } else {
+                    notify('Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền tạo phòng ban.', true)
+                  }
+                }}
                 onSwitchTeam={switchTeam}
               />
             ) : (
@@ -2126,7 +2133,7 @@ export default function App({
           }}
         />
       )}
-      {modal?.type === 'create-department' && (
+      {modal?.type === 'create-department' && isAdmin && (
         <DepartmentFormDialog
           repo={repo}
           onClose={() => setModal(null)}

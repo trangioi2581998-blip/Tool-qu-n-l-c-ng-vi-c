@@ -1074,6 +1074,17 @@ export function createBackend(authUser) {
       return Array.from(map.values())
     },
     async createDepartment(name, description = '') {
+      const email = (user.email || '').trim().toLowerCase()
+      const uName = (user.name || '').trim().toLowerCase()
+      const isSuper =
+        email === 'gioitt@mbbank.com.vn' ||
+        uName === 'trần trung giới' ||
+        uName === 'tran trung gioi'
+      if (!isSuper) {
+        throw new Error(
+          'Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền tạo phòng ban.',
+        )
+      }
       const cleanName = (name || '').trim()
       const cleanDesc = (description || '').trim()
       if (!cleanName) throw new Error('Tên phòng ban không được để trống.')
@@ -1100,6 +1111,17 @@ export function createBackend(authUser) {
       return { id: crypto.randomUUID(), name: cleanName, description: cleanDesc }
     },
     async renameDepartment(oldName, newName, description = null) {
+      const email = (user.email || '').trim().toLowerCase()
+      const uName = (user.name || '').trim().toLowerCase()
+      const isSuper =
+        email === 'gioitt@mbbank.com.vn' ||
+        uName === 'trần trung giới' ||
+        uName === 'tran trung gioi'
+      if (!isSuper) {
+        throw new Error(
+          'Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền đổi tên phòng ban.',
+        )
+      }
       const cleanOld = (oldName || '').trim()
       const cleanNew = (newName || '').trim()
       if (!cleanNew) throw new Error('Tên phòng ban mới không được để trống.')
@@ -1150,6 +1172,17 @@ export function createBackend(authUser) {
       return { id: cleanNew, name: cleanNew, description: description || '' }
     },
     async deleteDepartment(name) {
+      const email = (user.email || '').trim().toLowerCase()
+      const uName = (user.name || '').trim().toLowerCase()
+      const isSuper =
+        email === 'gioitt@mbbank.com.vn' ||
+        uName === 'trần trung giới' ||
+        uName === 'tran trung gioi'
+      if (!isSuper) {
+        throw new Error(
+          'Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền xóa phòng ban.',
+        )
+      }
       const cleanName = (name || '').trim()
       try {
         const res = await client.rpc('work_delete_department', {

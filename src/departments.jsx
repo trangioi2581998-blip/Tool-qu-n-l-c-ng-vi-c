@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { Avatar, Dialog, Dropdown, ErrorText, PasswordInput, readableError } from './ui.jsx'
 import { EditDirectoryMemberDialog, DeleteDirectoryMemberDialog } from './global-members.jsx'
+import { isSuperAdmin } from './model.js'
 
 /**
  * Dialog tạo hoặc sửa phòng ban
@@ -43,6 +44,10 @@ export function DepartmentFormDialog({
   async function submit(e) {
     e.preventDefault()
     if (!name.trim() || busy) return
+    if (!isSuperAdmin(repo?.user)) {
+      setError('Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền tạo hoặc sửa phòng ban.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -130,6 +135,10 @@ export function DeleteDepartmentDialog({
 
   async function handleConfirm(e) {
     e?.preventDefault?.()
+    if (!isSuperAdmin(repo?.user)) {
+      setError('Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền xóa phòng ban.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -426,10 +435,15 @@ export function AddMembersToDepartmentDialog({
 export function DepartmentPanel({
   repo,
   currentUserId,
+  isSuperAdmin: isSuperAdminProp,
   notify,
   onOpenCreateDept,
   onSwitchTeam,
 }) {
+  const isAdmin =
+    typeof isSuperAdminProp === 'boolean'
+      ? isSuperAdminProp
+      : isSuperAdmin(repo?.user)
   const [departments, setDepartments] = useState([])
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -684,23 +698,27 @@ export function DepartmentPanel({
                       <span className="btn-label-desktop">Thêm nhân sự</span>
                     </button>
 
-                    <button
-                      type="button"
-                      className="button ghost sm"
-                      onClick={() => setEditingDept(d)}
-                      title="Sửa tên phòng ban"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="button ghost sm"
+                        onClick={() => setEditingDept(d)}
+                        title="Sửa tên phòng ban"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
 
-                    <button
-                      type="button"
-                      className="button ghost sm text-danger"
-                      onClick={() => setDeletingDept(d)}
-                      title="Xóa phòng ban"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="button ghost sm text-danger"
+                        onClick={() => setDeletingDept(d)}
+                        title="Xóa phòng ban"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
 

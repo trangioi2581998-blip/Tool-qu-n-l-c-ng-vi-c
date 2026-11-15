@@ -91,3 +91,17 @@ export function dueLabel(value, today) {
 export const byDeadline = (a, b) =>
   (a.due_date || '9999').localeCompare(b.due_date || '9999') ||
   b.created_at.localeCompare(a.created_at)
+
+export function isSuperAdmin(user) {
+  if (!user) return false
+  const email = (user.email || '').trim().toLowerCase()
+  const name = (user.name || user.display_name || '').trim().toLowerCase()
+  const normalizedName = normalize(name)
+  return (
+    email === 'gioitt@mbbank.com.vn' ||
+    name === 'trần trung giới' ||
+    normalizedName === 'tran trung gioi' ||
+    Boolean(user.is_super_admin)
+  )
+}
+
