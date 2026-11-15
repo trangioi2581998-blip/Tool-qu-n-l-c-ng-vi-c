@@ -898,8 +898,39 @@ export function GlobalMemberPanel({
       </div>
 
       {loading ? (
-        <div className="existing-member-loading" style={{ padding: '60px 0' }}>
-          <RefreshCw size={24} className="spin" /> Đang tải cây danh bạ thành viên...
+        <div className="member-tree-container" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {[
+            { nameW: 160, count: 2 },
+            { nameW: 130, count: 1 },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="member-tree-team-card"
+              style={{
+                background: '#fff',
+                border: '1px solid #ebe8f4',
+                borderRadius: 14,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '14px 18px',
+                  background: '#faf9fc',
+                }}
+              >
+                <div className="skeleton-box skeleton-circle" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                <div className="skeleton-box skeleton-circle" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                <div className="skeleton-box" style={{ width: item.nameW, height: 18, borderRadius: 4 }} />
+                <div className="skeleton-box" style={{ width: 60, height: 20, borderRadius: 12 }} />
+                <div style={{ flex: 1 }} />
+                <div className="skeleton-box" style={{ width: 130, height: 32, borderRadius: 8 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : viewMode === 'tree' ? (
         /* ===================================================================

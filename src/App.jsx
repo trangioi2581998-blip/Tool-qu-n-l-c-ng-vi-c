@@ -58,6 +58,7 @@ import {
   DepartmentPanel,
   DepartmentFormDialog,
 } from './departments.jsx'
+import { ContentSkeleton } from './skeleton.jsx'
 import { AttachmentRetryDialog } from './task-attachments.jsx'
 import { uploadTaskAttachments } from './attachments.js'
 import { TeamChatPanel } from './team-chat.jsx'
@@ -732,6 +733,19 @@ function storedTeam(user) {
     return null
   }
 }
+
+function storedView(user) {
+  try {
+    const saved =
+      localStorage.getItem('nhip-viec.active-view.' + user) ||
+      localStorage.getItem('nhip-viec.last-active-view')
+    if (saved && pages[saved]) return { kind: saved }
+  } catch {
+    return { kind: 'mine' }
+  }
+  return { kind: 'mine' }
+}
+
 export default function App({
   repo,
   inviteToken = '',
@@ -743,7 +757,7 @@ export default function App({
   const [teamsReady, setTeamsReady] = useState(false)
   const [teamsError, setTeamsError] = useState('')
   const [snapshot, setSnapshot] = useState(null)
-  const [view, setView] = useState({ kind: 'mine' })
+  const [view, setView] = useState(() => storedView(repo.user.id))
   const [filters, setFilters] = useState(defaultFilters)
   const [layout, setLayout] = useState('board')
   const [query, setQuery] = useState('')
@@ -915,8 +929,21 @@ export default function App({
     }
   }, [modal])
 
+  useEffect(() => {
+    if (view?.kind) {
+      try {
+        localStorage.setItem('nhip-viec.active-view.' + repo.user.id, view.kind)
+        localStorage.setItem('nhip-viec.last-active-view', view.kind)
+      } catch {}
+    }
+  }, [view?.kind, repo.user.id])
+
   function go(kind) {
     setView({ kind })
+    try {
+      localStorage.setItem('nhip-viec.active-view.' + repo.user.id, kind)
+      localStorage.setItem('nhip-viec.last-active-view', kind)
+    } catch {}
     setFilters(defaultFilters)
     setQuery('')
     setMobileNav(false)
@@ -1761,9 +1788,7 @@ export default function App({
             </section>
           )}
           {loading && (
-            <div className="panel load-state" role="status">
-              Đang tải công việc…
-            </div>
+            <ContentSkeleton kind={view.kind} layout={layout} />
           )}
           {isTeamMissing && !loading && (
             <div className="panel">
@@ -1922,7 +1947,7 @@ export default function App({
               onCreate={() => onCreate('team')}
             />
           )}
-          {view.kind === 'allMembers' &&
+          {!loading && view.kind === 'allMembers' &&
             (isOwner ? (
               <GlobalMemberPanel
                 repo={repo}
@@ -1960,7 +1985,7 @@ export default function App({
                 </button>
               </div>
             ))}
-          {view.kind === 'departments' &&
+          {!loading && view.kind === 'departments' &&
             (isOwner ? (
               <DepartmentPanel
                 repo={repo}

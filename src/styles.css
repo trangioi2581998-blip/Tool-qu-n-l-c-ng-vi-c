@@ -6618,3 +6618,66 @@ h3 {
   color: #b91c1c;
 }
 
+/* ===================================================================
+   SKELETON LOADING & SHIMMER STYLES
+   =================================================================== */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-box {
+  background: linear-gradient(
+    90deg,
+    #edeaf4 0%,
+    #fbf9fd 35%,
+    #edeaf4 70%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* Skeleton on dark/purple hero banner */
+.skeleton-hero .skeleton-box {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.32) 35%,
+    rgba(255, 255, 255, 0.14) 70%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-shell {
+  pointer-events: none;
+  user-select: none;
+}
+
+.skeleton-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.skeleton-lanes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .skeleton-lanes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .skeleton-lanes {
+    grid-template-columns: 1fr;
+  }
+}
+
+

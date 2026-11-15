@@ -10,6 +10,7 @@ import '@fontsource/be-vietnam-pro/vietnamese-500.css'
 import '@fontsource/be-vietnam-pro/vietnamese-600.css'
 import '@fontsource/be-vietnam-pro/vietnamese-700.css'
 import App from './App.jsx'
+import { AppSkeleton } from './skeleton.jsx'
 import {
   authenticateDemo,
   createDemo,
@@ -285,6 +286,34 @@ function AuthForm({ client, invite, recovery, onRecovered }) {
     </AuthFrame>
   )
 }
+function hasSavedAuth() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+        const val = localStorage.getItem(k)
+        if (val && val !== 'null' && val.includes('access_token')) return true
+      }
+    }
+  } catch {}
+  return false
+}
+
+function getSavedViewKind() {
+  try {
+    const direct = localStorage.getItem('nhip-viec.last-active-view')
+    if (direct) return direct
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('nhip-viec.active-view.')) {
+        const val = localStorage.getItem(k)
+        if (val) return val
+      }
+    }
+  } catch {}
+  return 'mine'
+}
+
 function Connected({ adapter }) {
   const { client, createBackend } = adapter
   const [user, setUser] = useState(undefined)
@@ -304,12 +333,16 @@ function Connected({ adapter }) {
     () => (user ? createBackend(user) : null),
     [createBackend, user],
   )
-  if (user === undefined)
+  if (user === undefined) {
+    if (hasSavedAuth()) {
+      return <AppSkeleton kind={getSavedViewKind()} />
+    }
     return (
       <AuthFrame>
         <p role="status">Đang kiểm tra phiên đăng nhập…</p>
       </AuthFrame>
     )
+  }
   if (!repo || recovery)
     return (
       <AuthForm
@@ -535,11 +568,15 @@ if (import.meta.env.MODE === 'demo') {
     </AuthFrame>,
   )
 } else {
-  root.render(
-    <AuthFrame>
-      <p role="status">Đang kết nối Supabase…</p>
-    </AuthFrame>,
-  )
+  if (hasSavedAuth()) {
+    root.render(<AppSkeleton kind={getSavedViewKind()} />)
+  } else {
+    root.render(
+      <AuthFrame>
+        <p role="status">Đang kết nối Supabase…</p>
+      </AuthFrame>,
+    )
+  }
   import('./backend.js')
     .then((adapter) => root.render(<Connected adapter={adapter} />))
     .catch((error) =>
