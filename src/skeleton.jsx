@@ -572,7 +572,7 @@ export function AppSkeleton({ kind = 'mine' }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { key: 'allMembers', label: 'Quản lý all dự án' },
-                { key: 'departments', label: 'Quản lý phòng ban' },
+                ...(kind === 'departments' ? [{ key: 'departments', label: 'Quản lý phòng ban' }] : []),
               ].map((item) => (
                 <div
                   key={item.key}

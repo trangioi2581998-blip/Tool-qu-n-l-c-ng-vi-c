@@ -167,6 +167,7 @@ function Sidebar({
   onCreate,
   onInvite,
   isOwner,
+  isAdmin = false,
   onEditTeam,
   onDeleteTeam,
   open,
@@ -290,20 +291,22 @@ function Sidebar({
               </button>
             ))}
           </div>
-          {isOwner && (
+          {(isOwner || isAdmin) && (
             <div className="sidebar-section">
               <p>QUẢN LÝ CHUNG</p>
-              {Object.entries(commonPages).map(([key, { title, Icon }]) => (
-                <button
-                  className={'nav-item' + (view.kind === key ? ' active' : '')}
-                  key={key}
-                  onClick={() => onNav(key)}
-                  aria-current={view.kind === key ? 'page' : undefined}
-                >
-                  <Icon size={18} strokeWidth={1.9} />
-                  <span>{title}</span>
-                </button>
-              ))}
+              {Object.entries(commonPages)
+                .filter(([key]) => key !== 'departments' || isAdmin)
+                .map(([key, { title, Icon }]) => (
+                  <button
+                    className={'nav-item' + (view.kind === key ? ' active' : '')}
+                    key={key}
+                    onClick={() => onNav(key)}
+                    aria-current={view.kind === key ? 'page' : undefined}
+                  >
+                    <Icon size={18} strokeWidth={1.9} />
+                    <span>{title}</span>
+                  </button>
+                ))}
             </div>
           )}
         </nav>
@@ -758,7 +761,13 @@ export default function App({
   const [teamsReady, setTeamsReady] = useState(false)
   const [teamsError, setTeamsError] = useState('')
   const [snapshot, setSnapshot] = useState(null)
-  const [view, setView] = useState(() => storedView(repo.user.id))
+  const [view, setView] = useState(() => {
+    const sv = storedView(repo.user.id)
+    if (sv.kind === 'departments' && !isSuperAdmin(repo.user)) {
+      return { kind: 'mine' }
+    }
+    return sv
+  })
   const [filters, setFilters] = useState(defaultFilters)
   const [layout, setLayout] = useState('board')
   const [query, setQuery] = useState('')
@@ -1544,6 +1553,7 @@ export default function App({
           view,
           members,
           isOwner,
+          isAdmin,
           onEditTeam,
           onDeleteTeam,
         }}
@@ -1962,7 +1972,7 @@ export default function App({
                 onEditTeam={onEditTeam}
                 notify={notify}
                 onSwitchTeam={switchTeam}
-                onNavigateToDepartments={() => setView({ kind: 'departments' })}
+                onNavigateToDepartments={isAdmin ? () => setView({ kind: 'departments' }) : undefined}
               />
             ) : (
               <div
@@ -1988,18 +1998,14 @@ export default function App({
               </div>
             ))}
           {!loading && view.kind === 'departments' &&
-            (isOwner || isAdmin ? (
+            (isAdmin ? (
               <DepartmentPanel
                 repo={repo}
                 currentUserId={repo.user.id}
                 isSuperAdmin={isAdmin}
                 notify={notify}
                 onOpenCreateDept={() => {
-                  if (isAdmin) {
-                    setModal({ type: 'create-department' })
-                  } else {
-                    notify('Chỉ tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có quyền tạo phòng ban.', true)
-                  }
+                  setModal({ type: 'create-department' })
                 }}
                 onSwitchTeam={switchTeam}
               />
@@ -2015,7 +2021,7 @@ export default function App({
               >
                 <h3>Giới hạn quyền truy cập</h3>
                 <p className="muted" style={{ margin: '10px 0 20px' }}>
-                  Chỉ có tài khoản trưởng nhóm mới xem được menu Quản lý phòng ban này.
+                  Chỉ có tài khoản admin tổng (Trần Trung Giới - gioitt@mbbank.com.vn) mới có thể xem menu Quản lý phòng ban này.
                 </p>
                 <button
                   type="button"
