@@ -303,6 +303,8 @@ export function AssignDepartmentDialog({
 export function AddMembersToDepartmentDialog({
   department,
   repo,
+  teams = [],
+  currentTeam = null,
   onClose,
   onCreated,
   onAdded,
@@ -335,6 +337,7 @@ export function AddMembersToDepartmentDialog({
         email: email.trim().toLowerCase(),
         department: department.name,
         password,
+        teamId: currentTeam?.id || teams?.[0]?.id || null,
       })
       if (onCreated) {
         onCreated(created)
@@ -436,6 +439,9 @@ export function DepartmentPanel({
   repo,
   currentUserId,
   isSuperAdmin: isSuperAdminProp,
+  teams = [],
+  currentTeam = null,
+  reloadKey = 0,
   notify,
   onOpenCreateDept,
   onSwitchTeam,
@@ -500,7 +506,7 @@ export function DepartmentPanel({
 
   useEffect(() => {
     reload()
-  }, [repo])
+  }, [repo, reloadKey])
 
   const toggleDept = (deptName) => {
     setExpandedDeptNames((prev) => {
@@ -564,8 +570,8 @@ export function DepartmentPanel({
   return (
     <section className="panel global-member-panel department-panel">
       {/* Toolbar tìm kiếm và điều khiển */}
-      <div className="global-member-toolbar">
-        <div className="global-member-search">
+      <div className="global-member-toolbar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="global-member-search" style={{ flex: 1 }}>
           <Search size={16} className="search-icon" />
           <input
             type="text"
@@ -583,6 +589,17 @@ export function DepartmentPanel({
             </button>
           )}
         </div>
+        {isAdmin && onOpenCreateDept && (
+          <button
+            type="button"
+            className="button primary sm"
+            onClick={onOpenCreateDept}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, height: 38 }}
+            title="Thêm phòng ban mới"
+          >
+            <Plus size={16} /> <span className="btn-label-desktop">Thêm phòng ban</span>
+          </button>
+        )}
       </div>
 
       {/* Thông tin số lượng */}
@@ -975,12 +992,19 @@ export function DepartmentPanel({
       {addingToDept && (
         <AddMembersToDepartmentDialog
           department={addingToDept}
-          members={members}
           repo={repo}
+          teams={teams}
+          currentTeam={currentTeam}
           onClose={() => setAddingToDept(null)}
           onCreated={(created) => {
             const deptName = addingToDept.name
             setAddingToDept(null)
+            setDepartments((cur) => {
+              if (cur.some((d) => d.name === deptName)) return cur
+              return [...cur, { id: deptName, name: deptName, description: '' }].sort((a, b) =>
+                a.name.localeCompare(b.name),
+              )
+            })
             setMembers((cur) => {
               const idx = cur.findIndex((m) => m.user_id === created.user_id)
               if (idx >= 0) {
@@ -992,7 +1016,7 @@ export function DepartmentPanel({
             })
             setTimeout(() => {
               reload()
-            }, 300)
+            }, 400)
             notify(
               `Đã tạo tài khoản và thêm nhân sự "${created.display_name}" vào phòng ban "${deptName}".`,
             )
@@ -1004,7 +1028,7 @@ export function DepartmentPanel({
             )
             setTimeout(() => {
               reload()
-            }, 300)
+            }, 400)
             notify(`Đã thêm ${userIds.length} nhân sự vào phòng ban "${deptName}".`)
           }}
         />

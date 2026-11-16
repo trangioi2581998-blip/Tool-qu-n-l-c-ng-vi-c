@@ -783,6 +783,7 @@ export default function App({
   const [busyIds, setBusyIds] = useState(new Set())
   const [today, setToday] = useState(todayInVietnam)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [deptReloadKey, setDeptReloadKey] = useState(0)
   const [mailLink, setMailLink] = useState(() => {
     if (repo.mode !== 'live') return null
     const params = new URLSearchParams(location.search)
@@ -2000,9 +2001,13 @@ export default function App({
           {!loading && view.kind === 'departments' &&
             (isAdmin ? (
               <DepartmentPanel
+                key={`dept-panel-${deptReloadKey}`}
                 repo={repo}
                 currentUserId={repo.user.id}
                 isSuperAdmin={isAdmin}
+                teams={teams}
+                currentTeam={team}
+                reloadKey={deptReloadKey}
                 notify={notify}
                 onOpenCreateDept={() => {
                   setModal({ type: 'create-department' })
@@ -2154,6 +2159,7 @@ export default function App({
           onClose={() => setModal(null)}
           onSaved={(dept) => {
             setModal(null)
+            setDeptReloadKey((k) => k + 1)
             notify(`Đã tạo phòng ban "${dept.name}".`)
           }}
         />

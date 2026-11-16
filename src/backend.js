@@ -906,9 +906,14 @@ export function createBackend(authUser) {
       const email = (fields.email || '').trim().toLowerCase()
       const password = fields.password || '123456'
       const department = (fields.department || '').trim()
-      const initialTeam = fields.teamId || null
+      let initialTeam = fields.teamId || null
       const initialRole = fields.role || 'member'
 
+      if (!name || !email) {
+        throw new Error('Vui lòng nhập đầy đủ họ tên và email.')
+      }
+
+      // 1. Thử RPC work_create_directory_member (từ migration directory)
       try {
         const res = await client.rpc('work_create_directory_member', {
           member_name: name,
@@ -926,9 +931,66 @@ export function createBackend(authUser) {
         console.warn('work_create_directory_member RPC error:', err)
       }
 
-      // Fallback
+      // 2. Dự phòng: Sử dụng RPC work_create_member_direct (sẵn có trong Supabase)
+      // RPC này tạo tài khoản auth.users và thêm thành viên vào work_members kèm phòng ban!
       try {
-        const { data } = await client
+        let targetTeamId = initialTeam
+        if (!targetTeamId) {
+          const { data: myTeams } = await client
+            .from('work_members')
+            .select('team_id,role')
+            .eq('user_id', user.id)
+            .order('role', { ascending: false })
+          if (Array.isArray(myTeams) && myTeams.length > 0) {
+            const ownerTeam = myTeams.find((t) => t.role === 'owner') || myTeams[0]
+            targetTeamId = ownerTeam.team_id
+          }
+        }
+        if (!targetTeamId) {
+          const { data: anyTeam } = await client
+            .from('work_teams')
+            .select('id')
+            .limit(1)
+          if (Array.isArray(anyTeam) && anyTeam.length > 0) {
+            targetTeamId = anyTeam[0].id
+          }
+        }
+
+        if (targetTeamId) {
+          const direct = await client.rpc('work_create_member_direct', {
+            target_team: targetTeamId,
+            member_name: name,
+            member_email: email,
+            member_password: password,
+            member_department: department,
+          })
+          if (!direct.error && direct.data) {
+            void dispatchPendingEmails()
+            const m = direct.data.member || direct.data
+            return {
+              user_id: m.user_id,
+              display_name: m.display_name,
+              email: m.email,
+              department: m.department || department,
+              role: m.role || 'member',
+              teams: [{ id: targetTeamId, role: m.role || 'member' }],
+              accountCreated: direct.data.accountCreated ?? true,
+            }
+          }
+          if (direct.error && direct.error.code !== 'PGRST202') {
+            throw direct.error
+          }
+        }
+      } catch (err) {
+        if (err?.code !== 'PGRST202' && err?.message && !err.message.includes('schema cache')) {
+          throw err
+        }
+        console.warn('work_create_member_direct fallback error:', err)
+      }
+
+      // 3. Dự phòng bảng work_directory_members nếu có
+      try {
+        const { data, error } = await client
           .from('work_directory_members')
           .insert({
             user_id: crypto.randomUUID(),
@@ -938,7 +1000,7 @@ export function createBackend(authUser) {
           })
           .select()
           .single()
-        if (data) return data
+        if (!error && data) return data
       } catch {}
 
       return {
@@ -1071,6 +1133,23 @@ export function createBackend(authUser) {
         }
       } catch {}
 
+      // Lấy từ localStorage nếu có phòng ban vừa tạo mới mà DB chưa có bảng hoặc chưa có nhân sự
+      try {
+        const customDepts = JSON.parse(localStorage.getItem('nhip-viec.custom-departments') || '[]')
+        if (Array.isArray(customDepts)) {
+          for (const cd of customDepts) {
+            const name = (cd?.name || '').trim()
+            if (name && !map.has(name)) {
+              map.set(name, {
+                id: cd.id || name,
+                name,
+                description: cd.description || '',
+              })
+            }
+          }
+        }
+      } catch {}
+
       return Array.from(map.values())
     },
     async createDepartment(name, description = '') {
@@ -1089,26 +1168,42 @@ export function createBackend(authUser) {
       const cleanDesc = (description || '').trim()
       if (!cleanName) throw new Error('Tên phòng ban không được để trống.')
 
+      let saved = null
       try {
         const res = await client.rpc('work_create_department', {
           dept_name: cleanName,
           dept_desc: cleanDesc,
         })
-        if (!res.error && res.data) return res.data
+        if (!res.error && res.data) saved = res.data
       } catch (e) {
         console.warn('work_create_department RPC error:', e)
       }
 
+      if (!saved) {
+        try {
+          const { data, error } = await client
+            .from('work_departments')
+            .insert({ name: cleanName, description: cleanDesc })
+            .select()
+            .single()
+          if (!error && data) saved = data
+        } catch {}
+      }
+
+      if (!saved) {
+        saved = { id: crypto.randomUUID(), name: cleanName, description: cleanDesc }
+      }
+
+      // Lưu vào localStorage để các phòng ban mới tạo (kể cả chưa có nhân viên) không bị mất khi F5 hoặc reload
       try {
-        const { data, error } = await client
-          .from('work_departments')
-          .insert({ name: cleanName, description: cleanDesc })
-          .select()
-          .single()
-        if (!error && data) return data
+        const storageKey = 'nhip-viec.custom-departments'
+        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]')
+        const filtered = existing.filter((d) => d.name.toLowerCase() !== cleanName.toLowerCase())
+        filtered.push(saved)
+        localStorage.setItem(storageKey, JSON.stringify(filtered))
       } catch {}
 
-      return { id: crypto.randomUUID(), name: cleanName, description: cleanDesc }
+      return saved
     },
     async renameDepartment(oldName, newName, description = null) {
       const email = (user.email || '').trim().toLowerCase()
@@ -1169,6 +1264,16 @@ export function createBackend(authUser) {
         }
       } catch {}
 
+      // Cập nhật trong localStorage
+      try {
+        const storageKey = 'nhip-viec.custom-departments'
+        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]')
+        const updated = existing.map((d) =>
+          d.name === cleanOld ? { ...d, name: cleanNew, ...(description ? { description } : {}) } : d
+        )
+        localStorage.setItem(storageKey, JSON.stringify(updated))
+      } catch {}
+
       return { id: cleanNew, name: cleanNew, description: description || '' }
     },
     async deleteDepartment(name) {
@@ -1220,6 +1325,14 @@ export function createBackend(authUser) {
             } catch {}
           }
         }
+      } catch {}
+
+      // Xóa khỏi localStorage
+      try {
+        const storageKey = 'nhip-viec.custom-departments'
+        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]')
+        const updated = existing.filter((d) => d.name !== cleanName)
+        localStorage.setItem(storageKey, JSON.stringify(updated))
       } catch {}
     },
     async assignMemberDepartment(userId, departmentName) {
@@ -1308,6 +1421,15 @@ export function createBackend(authUser) {
           await client
             .from('work_departments')
             .upsert({ name: cleanDept }, { onConflict: 'name' })
+        } catch {}
+
+        try {
+          const storageKey = 'nhip-viec.custom-departments'
+          const existing = JSON.parse(localStorage.getItem(storageKey) || '[]')
+          if (!existing.some((d) => d.name.toLowerCase() === cleanDept.toLowerCase())) {
+            existing.push({ id: cleanDept, name: cleanDept, description: '' })
+            localStorage.setItem(storageKey, JSON.stringify(existing))
+          }
         } catch {}
       }
     },
