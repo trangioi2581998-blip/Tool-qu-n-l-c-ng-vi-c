@@ -1073,14 +1073,22 @@ export function createBackend(authUser) {
           target_user: userId,
         })
         if (!res.error) return
+        if (res.error && res.error.code !== 'PGRST202') {
+          throw res.error
+        }
       } catch (err) {
+        if (err?.code !== 'PGRST202' && err?.message && !err.message.includes('schema cache')) {
+          throw err
+        }
         console.warn('work_delete_directory_member RPC error:', err)
       }
 
       try {
         await client.from('work_members').delete().eq('user_id', userId)
         await client.from('work_directory_members').delete().eq('user_id', userId)
-      } catch {}
+      } catch (err) {
+        throw err
+      }
     },
     async listDepartments() {
       const map = new Map()
