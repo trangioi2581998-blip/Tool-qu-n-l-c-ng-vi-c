@@ -677,8 +677,32 @@ export function createBackend(authUser) {
     },
     async listAvailableMembers(currentTeamId) {
       const all = []
+      const currentMemberIds = new Set()
 
-      // 1. Lấy toàn bộ nhân sự từ Quản lý phòng ban (work_directory_members)
+      // 1. Lấy toàn bộ nhân sự từ RPC work_list_all_members (chuẩn xác & bảo mật nhất)
+      try {
+        if (typeof this.listAllMembers === 'function') {
+          const allMems = await this.listAllMembers()
+          if (Array.isArray(allMems)) {
+            all.push(...allMems)
+            if (currentTeamId) {
+              for (const m of allMems) {
+                if (
+                  m.teams &&
+                  Array.isArray(m.teams) &&
+                  m.teams.some((t) => (t.id || t) === currentTeamId)
+                ) {
+                  currentMemberIds.add(m.user_id || m.id)
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Query listAllMembers for available members:', e)
+      }
+
+      // 2. Lấy thêm từ Quản lý phòng ban (work_directory_members)
       try {
         const { data, error } = await client
           .from('work_directory_members')
@@ -691,44 +715,7 @@ export function createBackend(authUser) {
         console.warn('Query work_directory_members for available members:', e)
       }
 
-      // 2. Lấy thêm từ listAllMembers
-      try {
-        if (typeof this.listAllMembers === 'function') {
-          const allMems = await this.listAllMembers()
-          if (Array.isArray(allMems)) {
-            all.push(...allMems)
-          }
-        }
-      } catch (e) {}
-
-      // 3. Dự phòng từ work_members
-      try {
-        const { data, error } = await client
-          .from('work_members')
-          .select('user_id,display_name,email,department')
-          .order('display_name')
-        if (!error && Array.isArray(data)) {
-          all.push(...data)
-        }
-      } catch (e) {
-        console.warn('Query work_members for available members:', e)
-      }
-
-      try {
-        const demo = await client.rpc('work_list_demo_accounts')
-        if (demo.data && Array.isArray(demo.data)) {
-          all.push(
-            ...demo.data.map((d) => ({
-              user_id: d.id,
-              display_name: d.name,
-              email: d.email,
-              department: d.department || '',
-            })),
-          )
-        }
-      } catch {}
-
-      let currentMemberIds = new Set()
+      // 3. Dự phòng từ work_members của nhóm hiện tại
       if (currentTeamId) {
         try {
           const { data } = await client
@@ -736,7 +723,7 @@ export function createBackend(authUser) {
             .select('user_id')
             .eq('team_id', currentTeamId)
           if (Array.isArray(data)) {
-            currentMemberIds = new Set(data.map((m) => m.user_id))
+            data.forEach((m) => currentMemberIds.add(m.user_id))
           }
         } catch {}
       }
@@ -763,13 +750,16 @@ export function createBackend(authUser) {
       return Array.from(map.values())
     },
     async addExistingMember(team, member, role = 'member') {
-      const targetTeamId = team.id || team
-      const targetUserId = member.user_id || member.id
+      const targetTeamId = team?.id || team
+      const targetUserId = member?.user_id || member?.id
+      const cleanRole = ['owner', 'deputy', 'member'].includes(role) ? role : 'member'
+
+      // 1. Thử gọi RPC work_add_existing_member
       try {
         const res = await client.rpc('work_add_existing_member', {
           target_team: targetTeamId,
           target_user: targetUserId,
-          member_role: role,
+          member_role: cleanRole,
         })
         if (!res.error && res.data) {
           void dispatchPendingEmails()
@@ -779,10 +769,13 @@ export function createBackend(authUser) {
           throw res.error
         }
       } catch (err) {
-        if (err?.code !== 'PGRST202') console.warn('work_add_existing_member error:', err)
+        if (err?.code !== 'PGRST202') {
+          console.warn('work_add_existing_member error:', err)
+          throw err
+        }
       }
 
-      // Fallback 1: Direct insert into work_members
+      // 2. Dự phòng 1: Insert trực tiếp vào bảng work_members
       try {
         const { data, error } = await client
           .from('work_members')
@@ -792,7 +785,7 @@ export function createBackend(authUser) {
             display_name: member.display_name || member.name,
             email: member.email,
             department: member.department || '',
-            role,
+            role: cleanRole,
           })
           .select('user_id,display_name,email,department,role')
           .single()
@@ -800,19 +793,56 @@ export function createBackend(authUser) {
           void dispatchPendingEmails()
           return data
         }
+        if (error && error.code !== '23505') {
+          console.warn('Direct insert work_members fallback error:', error)
+        }
       } catch (err) {
-        console.warn('Direct insert work_members fallback error:', err)
+        console.warn('Direct insert work_members fallback exception:', err)
       }
 
-      // Fallback 2: Return synthetic member object
-      void dispatchPendingEmails()
-      return {
-        user_id: targetUserId,
-        display_name: member.display_name || member.name,
-        email: member.email,
-        department: member.department || '',
-        role,
+      // 3. Dự phòng 2: Nếu đã tồn tại thì cập nhật vai trò
+      try {
+        const { data, error } = await client
+          .from('work_members')
+          .update({
+            role: cleanRole,
+            display_name: member.display_name || member.name,
+            department: member.department || '',
+          })
+          .eq('team_id', targetTeamId)
+          .eq('user_id', targetUserId)
+          .select('user_id,display_name,email,department,role')
+          .single()
+        if (!error && data) {
+          void dispatchPendingEmails()
+          return data
+        }
+      } catch (err) {}
+
+      // Nếu cả RPC và Insert đều thất bại do database chưa chạy SQL
+      throw new Error(
+        'Chức năng thêm thành viên vào dự án cần chạy mã cập nhật SQL trên Supabase (RPC work_add_existing_member).'
+      )
+    },
+    async removeMember(team, userId) {
+      const targetTeamId = team?.id || team
+      try {
+        const res = await client.rpc('work_remove_member', {
+          target_team: targetTeamId,
+          target_user: userId,
+        })
+        if (res?.error && res.error.code !== 'PGRST202') {
+          throw res.error
+        }
+      } catch (err) {
+        const { error: delError } = await client
+          .from('work_members')
+          .delete()
+          .eq('team_id', targetTeamId)
+          .eq('user_id', userId)
+        if (delError) throw err || delError
       }
+      void dispatchPendingEmails()
     },
     async updateMember(team, userId, fields) {
       const res = result(

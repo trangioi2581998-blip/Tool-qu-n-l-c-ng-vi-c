@@ -1317,10 +1317,34 @@ export function GlobalMemberPanel({
           repo={repo}
           isTeamLead={isTeamLead}
           onClose={() => setAddingToTeam(null)}
-          onAdded={() => {
+          onAdded={({ members: addedList } = {}) => {
+            const teamSnapshot = addingToTeam
             setAddingToTeam(null)
+            if (Array.isArray(addedList) && addedList.length > 0 && teamSnapshot) {
+              setMembers((cur) =>
+                cur.map((m) => {
+                  const addedInfo = addedList.find(
+                    (a) => a.user_id === m.user_id || a.id === m.user_id,
+                  )
+                  if (!addedInfo) return m
+                  const existingTeams = m.teams || []
+                  if (existingTeams.some((t) => t.id === teamSnapshot.id)) return m
+                  return {
+                    ...m,
+                    teams: [
+                      ...existingTeams,
+                      {
+                        id: teamSnapshot.id,
+                        name: teamSnapshot.name,
+                        role: addedInfo.role || 'member',
+                      },
+                    ],
+                  }
+                }),
+              )
+            }
             reload()
-            notify(`Đã thêm thành viên vào nhóm "${addingToTeam.name}".`)
+            notify(`Đã thêm thành viên vào dự án "${teamSnapshot?.name || ''}".`)
           }}
           onNavigateToDepartments={onNavigateToDepartments}
           onOpenCreateDirectoryMember={onNavigateToDepartments || onOpenCreate}
