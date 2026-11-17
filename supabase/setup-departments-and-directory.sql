@@ -194,7 +194,6 @@ declare
   clean_dept text := coalesce(btrim(member_department), '');
   account_id uuid;
   existed boolean;
-  chosen_team uuid := initial_team;
 begin
   if clean_name = '' or clean_email = '' then
     raise exception 'Vui lòng nhập đầy đủ họ tên và email.';
@@ -213,14 +212,12 @@ begin
     email = excluded.email,
     department = case when excluded.department <> '' then excluded.department else public.work_directory_members.department end;
 
-  if chosen_team is null then
-    select id into chosen_team from public.work_teams order by created_at asc limit 1;
-  end if;
-
-  if chosen_team is not null then
+  -- CHỈ thêm vào work_members (dự án) NẾU initial_team được chỉ định rõ ràng (khi thêm từ trong dự án)
+  -- Khi thêm từ Quản lý phòng ban, initial_team = null => KHÔNG thuộc bất kỳ dự án nào!
+  if initial_team is not null then
     insert into public.work_members (team_id, user_id, display_name, email, department, role)
     values (
-      chosen_team,
+      initial_team,
       account_id,
       clean_name,
       clean_email,
@@ -244,6 +241,7 @@ begin
     'display_name', clean_name,
     'email', clean_email,
     'department', clean_dept,
+    'teams', case when initial_team is not null then jsonb_build_array(jsonb_build_object('id', initial_team, 'role', initial_role)) else '[]'::jsonb end,
     'accountCreated', not existed
   );
 end;

@@ -303,8 +303,6 @@ export function AssignDepartmentDialog({
 export function AddMembersToDepartmentDialog({
   department,
   repo,
-  teams = [],
-  currentTeam = null,
   onClose,
   onCreated,
   onAdded,
@@ -337,7 +335,7 @@ export function AddMembersToDepartmentDialog({
         email: email.trim().toLowerCase(),
         department: department.name,
         password,
-        teamId: currentTeam?.id || teams?.[0]?.id || null,
+        teamId: null, // Thêm từ Quản lý phòng ban: KHÔNG thuộc bất kỳ dự án nào ban đầu
       })
       if (onCreated) {
         onCreated(created)
@@ -993,8 +991,6 @@ export function DepartmentPanel({
         <AddMembersToDepartmentDialog
           department={addingToDept}
           repo={repo}
-          teams={teams}
-          currentTeam={currentTeam}
           onClose={() => setAddingToDept(null)}
           onCreated={(created) => {
             const deptName = addingToDept.name

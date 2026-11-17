@@ -927,38 +927,22 @@ export function createBackend(authUser) {
           void dispatchPendingEmails()
           return res.data
         }
+        if (res.error && res.error.code !== 'PGRST202') {
+          throw res.error
+        }
       } catch (err) {
+        if (err?.code !== 'PGRST202' && err?.message && !err.message.includes('schema cache')) {
+          throw err
+        }
         console.warn('work_create_directory_member RPC error:', err)
       }
 
-      // 2. Dự phòng: Sử dụng RPC work_create_member_direct (sẵn có trong Supabase)
-      // RPC này tạo tài khoản auth.users và thêm thành viên vào work_members kèm phòng ban!
-      try {
-        let targetTeamId = initialTeam
-        if (!targetTeamId) {
-          const { data: myTeams } = await client
-            .from('work_members')
-            .select('team_id,role')
-            .eq('user_id', user.id)
-            .order('role', { ascending: false })
-          if (Array.isArray(myTeams) && myTeams.length > 0) {
-            const ownerTeam = myTeams.find((t) => t.role === 'owner') || myTeams[0]
-            targetTeamId = ownerTeam.team_id
-          }
-        }
-        if (!targetTeamId) {
-          const { data: anyTeam } = await client
-            .from('work_teams')
-            .select('id')
-            .limit(1)
-          if (Array.isArray(anyTeam) && anyTeam.length > 0) {
-            targetTeamId = anyTeam[0].id
-          }
-        }
-
-        if (targetTeamId) {
+      // 2. Dự phòng: CHỈ KHI có initialTeam được yêu cầu cụ thể mới dùng work_create_member_direct
+      // Nếu thêm từ Quản lý phòng ban (initialTeam = null) => TUYỆT ĐỐI KHÔNG tự ý gán vào dự án nào!
+      if (initialTeam) {
+        try {
           const direct = await client.rpc('work_create_member_direct', {
-            target_team: targetTeamId,
+            target_team: initialTeam,
             member_name: name,
             member_email: email,
             member_password: password,
@@ -973,19 +957,19 @@ export function createBackend(authUser) {
               email: m.email,
               department: m.department || department,
               role: m.role || 'member',
-              teams: [{ id: targetTeamId, role: m.role || 'member' }],
+              teams: [{ id: initialTeam, role: m.role || 'member' }],
               accountCreated: direct.data.accountCreated ?? true,
             }
           }
           if (direct.error && direct.error.code !== 'PGRST202') {
             throw direct.error
           }
+        } catch (err) {
+          if (err?.code !== 'PGRST202' && err?.message && !err.message.includes('schema cache')) {
+            throw err
+          }
+          console.warn('work_create_member_direct fallback error:', err)
         }
-      } catch (err) {
-        if (err?.code !== 'PGRST202' && err?.message && !err.message.includes('schema cache')) {
-          throw err
-        }
-        console.warn('work_create_member_direct fallback error:', err)
       }
 
       // 3. Dự phòng bảng work_directory_members nếu có
@@ -1000,7 +984,7 @@ export function createBackend(authUser) {
           })
           .select()
           .single()
-        if (!error && data) return data
+        if (!error && data) return { ...data, teams: [] }
       } catch {}
 
       return {
