@@ -73,3 +73,4 @@ end;
 $$;
 
 grant execute on function public.work_create_directory_member(text, text, text, text, uuid, text) to authenticated, anon;
+

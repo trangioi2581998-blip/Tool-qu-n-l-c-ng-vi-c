@@ -792,7 +792,7 @@ export function GlobalMemberPanel({
   // Mặc định mở rộng tất cả các team
   useEffect(() => {
     if (teams && teams.length > 0) {
-      setExpandedTeamIds(new Set([...teams.map((t) => t.id), 'unassigned']))
+      setExpandedTeamIds(new Set(teams.map((t) => t.id)))
     }
   }, [teams])
 
@@ -806,7 +806,7 @@ export function GlobalMemberPanel({
   }
 
   const expandAll = () => {
-    setExpandedTeamIds(new Set([...teams.map((t) => t.id), 'unassigned']))
+    setExpandedTeamIds(new Set(teams.map((t) => t.id)))
   }
 
   const collapseAll = () => {
@@ -888,8 +888,8 @@ export function GlobalMemberPanel({
     return teams.some((t) => isTeamLead(t.id))
   }, [teams, members, currentUserId, repo?.user])
 
-  const unassignedMembers = useMemo(() => {
-    return members.filter((m) => !m.teams || m.teams.length === 0)
+  const projectMembers = useMemo(() => {
+    return members.filter((m) => m.teams && m.teams.length > 0)
   }, [members])
 
   // Lọc cho Tree View:
@@ -910,15 +910,15 @@ export function GlobalMemberPanel({
   }, [teams, members, q])
 
   const filteredFlatMembers = useMemo(() => {
-    if (!q) return members
-    return members.filter(
+    if (!q) return projectMembers
+    return projectMembers.filter(
       (m) =>
         (m.display_name && m.display_name.toLowerCase().includes(q)) ||
         (m.email && m.email.toLowerCase().includes(q)) ||
         (m.department && m.department.toLowerCase().includes(q)) ||
         (m.teams && m.teams.some((t) => t.name.toLowerCase().includes(q))),
     )
-  }, [members, q])
+  }, [projectMembers, q])
 
   return (
     <section className="panel global-member-panel">
@@ -926,7 +926,7 @@ export function GlobalMemberPanel({
       <div className="global-member-count-bar">
         <span>
           Tổng số <strong>{teams.length}</strong> nhóm công việc •{' '}
-          <strong>{members.length}</strong> thành viên chung
+          <strong>{projectMembers.length}</strong> thành viên tham gia dự án
         </span>
       </div>
 
@@ -1203,101 +1203,6 @@ export function GlobalMemberPanel({
               </div>
             )
           })}
-
-          {/* Nhánh: Thành viên chưa phân vào nhóm nào */}
-          {unassignedMembers.length > 0 && (!q || unassignedMembers.some((m) =>
-            (m.display_name && m.display_name.toLowerCase().includes(q)) ||
-            (m.email && m.email.toLowerCase().includes(q)),
-          )) && (
-            <div
-              className={
-                'member-tree-team-card unassigned-card' +
-                (expandedTeamIds.has('unassigned') ? ' expanded' : '')
-              }
-            >
-              <div
-                className="member-tree-team-header"
-                onClick={() => toggleTeam('unassigned')}
-              >
-                <button
-                  type="button"
-                  className="tree-collapse-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleTeam('unassigned')
-                  }}
-                >
-                  {expandedTeamIds.has('unassigned') ? (
-                    <ChevronDown size={18} />
-                  ) : (
-                    <ChevronRight size={18} />
-                  )}
-                </button>
-                <div className="member-tree-team-title">
-                  <span className="member-tree-team-icon muted">
-                    <UsersRound size={18} />
-                  </span>
-                  <h3>Chưa phân vào nhóm nào</h3>
-                  <span className="member-tree-count-pill unassigned">
-                    {unassignedMembers.length} thành viên
-                  </span>
-                </div>
-              </div>
-
-              {expandedTeamIds.has('unassigned') && (
-                <div className="member-tree-team-body">
-                  <div className="member-tree-list">
-                    {unassignedMembers.map((m) => (
-                      <div key={m.user_id} className="member-tree-item">
-                        <div className="member-tree-item-user">
-                          <Avatar name={m.display_name} id={m.user_id} />
-                          <div className="member-tree-item-name-group">
-                            <div className="member-tree-item-name">
-                              <strong>{m.display_name}</strong>
-                              {m.user_id === currentUserId && (
-                                <small className="member-you-tag">(Bạn)</small>
-                              )}
-                            </div>
-                            <span className="member-tree-item-email">
-                              {m.email}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="member-tree-item-dept">
-                          {m.department ? (
-                            <span className="member-dept-badge">
-                              {m.department}
-                            </span>
-                          ) : (
-                            <span className="muted text-xs">
-                              Chưa phân phòng
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="member-tree-item-role">
-                          <span className="badge gray">Chưa vào nhóm</span>
-                        </div>
-
-                        {hasAnyLeadTeam && (
-                          <div className="member-tree-item-actions">
-                            <button
-                              type="button"
-                              className="button secondary sm"
-                              onClick={() => setAssigningMember(m)}
-                            >
-                              <FolderPlus size={14} /> Gán vào nhóm…
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       ) : (
         /* ===================================================================
