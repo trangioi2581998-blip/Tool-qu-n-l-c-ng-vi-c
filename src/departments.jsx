@@ -568,8 +568,8 @@ export function DepartmentPanel({
   return (
     <section className="panel global-member-panel department-panel">
       {/* Toolbar tìm kiếm và điều khiển */}
-      <div className="global-member-toolbar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <div className="global-member-search" style={{ flex: 1 }}>
+      <div className="global-member-toolbar">
+        <div className="global-member-search">
           <Search size={16} className="search-icon" />
           <input
             type="text"
@@ -587,17 +587,6 @@ export function DepartmentPanel({
             </button>
           )}
         </div>
-        {isAdmin && onOpenCreateDept && (
-          <button
-            type="button"
-            className="button primary sm"
-            onClick={onOpenCreateDept}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, height: 38 }}
-            title="Thêm phòng ban mới"
-          >
-            <Plus size={16} /> <span className="btn-label-desktop">Thêm phòng ban</span>
-          </button>
-        )}
       </div>
 
       {/* Thông tin số lượng */}
