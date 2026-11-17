@@ -25,17 +25,12 @@ begin
   end if;
 
   -- Kiểm tra quyền:
-  -- Cho phép nếu là:
-  -- - Super admin (gioitt@mbbank.com.vn, mrtran25081998@gmail.com)
-  -- - Hoặc trưởng nhóm (role = 'owner') của nhóm này
-  -- - Hoặc người tạo nhóm (created_by)
+  -- Cho phép nếu là Super admin hoặc trưởng nhóm (role = 'owner') của nhóm này
   if actor is not null then
     if not (
       exists (select 1 from auth.users where id = actor and lower(email) in ('gioitt@mbbank.com.vn', 'mrtran25081998@gmail.com'))
       or
       exists (select 1 from public.work_members where team_id = target_team and user_id = actor and role = 'owner')
-      or
-      exists (select 1 from public.work_teams where id = target_team and created_by = actor)
     ) then
       raise exception using errcode = '42501', message = 'Chỉ có trưởng nhóm mới có quyền thêm thành viên vào nhóm này.';
     end if;
@@ -143,10 +138,6 @@ with check (
   or exists (
     select 1 from auth.users
     where id = auth.uid() and lower(email) in ('gioitt@mbbank.com.vn', 'mrtran25081998@gmail.com')
-  )
-  or exists (
-    select 1 from public.work_teams
-    where id = work_members.team_id and created_by = auth.uid()
   )
 );
 
